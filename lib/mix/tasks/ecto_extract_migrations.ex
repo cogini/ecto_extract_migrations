@@ -79,12 +79,12 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
   def dispatch({line, index}, {nil, _local, global} = state) do
     # Mix.shell().info("dispatch> #{line}")
     cond do
-      String.match?(line, ~r/^\s*--/) -> # skip comments
+      String.match?(line, ~r/^\s*--/) ->  # skip comments
         state
-      String.match?(line, ~r/^\s*$/) -> # skip blank lines
+      String.match?(line, ~r/^\s*$/) ->   # skip blank lines
         state
-      String.match?(line, ~r/^\s*CREATE TABLE/) ->
-          CreateTable.parse_sql({line, index}, {nil, [], global})
+      String.match?(line, ~r/^\s*CREATE TABLE/i) ->
+        CreateTable.parse_sql_line({line, index}, {nil, [], global})
       true ->
         state
     end
