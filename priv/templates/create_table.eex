@@ -1,0 +1,11 @@
+defmodule <%= repo %>.Migrations.<%= module_name %> do
+  use Ecto.Migration
+
+  def change do
+    create table("<%= table %>"<%= prefix %><%= primary_key %>) do
+    <%= for field <- fields do %>
+      <%= field %>
+    <% end %>
+    end
+  end
+end
