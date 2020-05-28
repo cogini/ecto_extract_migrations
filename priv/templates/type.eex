@@ -1,0 +1,11 @@
+defmodule <%= repo %>.Migrations.<%= module_name %> do
+  use Ecto.Migration
+
+  def up do
+    execute("<%= sql %>")
+  end
+
+  def down do
+    execute("drop type if exists <%= schema %>.<%= name %>")
+  end
+end

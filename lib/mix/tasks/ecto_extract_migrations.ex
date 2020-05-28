@@ -17,10 +17,7 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
 
   alias EctoExtractMigrations.Table
   alias EctoExtractMigrations.Schema
-
-  # Directory where output migration files go
-  # TODO: this should be generated from repo name
-  @migrations_path "priv/repo/migrations"
+  alias EctoExtractMigrations.Type
 
   use Mix.Task
 
@@ -74,6 +71,12 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
           filename = Path.join(migrations_path, "#{prefix}_schema_#{data.schema}.exs")
           Mix.shell().info(filename)
           :ok = File.write(filename, migration)
+        :type ->
+          {:ok, migration} = Type.create_migration(data, bindings)
+          Mix.shell().info(migration)
+          filename = Path.join(migrations_path, "#{prefix}_type_#{data.schema}.exs")
+          Mix.shell().info(filename)
+          :ok = File.write(filename, migration)
       end
     end
   end
@@ -85,10 +88,14 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
         state
       String.match?(line, ~r/^\s*$/) ->   # skip blank lines
         state
-      String.match?(line, ~r/^\s*CREATE TABLE/i) ->
+      # String.match?(line, ~r/^\s*CREATE TABLE/i) ->
+      String.match?(line, ~r/^CREATE TABLE/i) ->
         Table.parse_sql_line({line, index}, {nil, nil, global})
-      String.match?(line, ~r/^\s*CREATE SCHEMA/i) ->
+      # String.match?(line, ~r/^\s*CREATE SCHEMA/i) ->
+      String.match?(line, ~r/^CREATE SCHEMA/i) ->
         Schema.parse_sql_line({line, index}, {nil, nil, global})
+      String.match?(line, ~r/^CREATE TYPE/i) ->
+        Type.parse_sql_line({line, index}, {nil, nil, global})
       true ->
         state
     end

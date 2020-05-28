@@ -23,7 +23,7 @@ defmodule EctoExtractMigrations.Schema do
   def parse_sql_line({line, index}, {_fun, _local, global}) do
     sql = String.trim(line)
 
-    case Regex.named_captures(~r/\s*CREATE\s+SCHEMA\s+(?<name>\w+)\s*;$/i, sql) do
+    case Regex.named_captures(~r/CREATE\s+SCHEMA\s+(?<name>\w+)\s*;$/i, sql) do
       nil ->
         raise ParseError, line: index, message: "Could not match CREATE SCHEMA line"
       data ->
