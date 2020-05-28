@@ -5,6 +5,9 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations.CreateTable do
   def parse_sql({line, _index}, {_fun, local, global}) do
     # Mix.shell().info("create_table> #{line} #{inspect local}")
 
+    # |> Stream.reject(&String.match?(&1, ~r/^\s*--/)) # skip comments
+    # |> Stream.reject(&String.match?(&1, ~r/^\s*$/))  # skip blank lines
+
     line = String.trim(line)
 
     if Regex.match?(~r/\);/, line) do

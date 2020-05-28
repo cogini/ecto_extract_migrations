@@ -46,7 +46,7 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
     {_, _, results} =
       sql_file
       |> File.stream!
-      |> Stream.map(&String.trim_trailing/1)
+      # |> Stream.map(&String.trim_trailing/1)
       # |> Stream.reject(&String.match?(&1, ~r/^\s*--/)) # skip comments
       # |> Stream.reject(&String.match?(&1, ~r/^\s*$/))  # skip blank lines
       |> Stream.with_index
@@ -82,10 +82,14 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
   def dispatch({line, index}, {nil, _local, global} = state) do
     # Mix.shell().info("dispatch> #{line}")
     cond do
+      String.match?(line, ~r/^\s*--/) -> # skip comments
+        state
+      String.match?(line, ~r/^\s*$/) -> # skip blank lines
+        state
       String.match?(line, ~r/^\s*CREATE TABLE/) ->
           CreateTable.parse_sql({line, index}, {nil, [], global})
-        true ->
-          state
+      true ->
+        state
     end
   end
   def dispatch({line, index}, {fun, _local, _global} = state), do: fun.({line, index}, state)
