@@ -21,8 +21,6 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
   # TODO: this should be generated from repo name
   @migrations_path "priv/repo/migrations"
 
-  @app :ecto_extract_migrations
-
   use Mix.Task
 
   @impl Mix.Task
@@ -50,27 +48,14 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
       |> Enum.reduce({nil, nil, []}, &dispatch/2)
 
     objects = Enum.reverse(results)
-    Mix.shell().info("#{inspect List.first(objects)}")
+
+    bindings = [
+      repo: repo,
+    ]
 
     for data <- objects do
-      Mix.shell().info("SQL: #{data[:sql]}}")
-      Mix.shell().info("#{data[:type]} #{data[:table]} #{inspect data[:fields]}")
-      {schema, name} = parse_name(data[:table])
-      module_name = "#{Macro.camelize(schema)}.#{Macro.camelize(name)}"
-
-      bindings = [
-        repo: repo,
-        module_name: module_name,
-        table: name,
-        prefix: format_prefix(schema),
-        primary_key: format_primary_key(data[:fields]),
-        fields: Enum.map(data[:fields], &format_field/1)
-      ]
-
-      template_dir = Application.app_dir(@app, ["priv", "templates"])
-      template_path = Path.join(template_dir, "create_table.eex")
-      {:ok, migration} = eval_template(template_path, bindings)
-
+      Mix.shell().info("SQL: #{data[:sql]}")
+      {:ok, migration} = CreateTable.create_migration(data, bindings)
       Mix.shell().info(migration)
     end
 
@@ -84,7 +69,7 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
       String.match?(line, ~r/^\s*$/) ->   # skip blank lines
         state
       String.match?(line, ~r/^\s*CREATE TABLE/i) ->
-        CreateTable.parse_sql_line({line, index}, {nil, [], global})
+        CreateTable.parse_sql_line({line, index}, {nil, nil, global})
       true ->
         state
     end
@@ -100,44 +85,6 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
     e ->
       {:error, {:template, e}}
   end
-
-  def parse_name(name) when is_binary(name), do: parse_name(String.split(name, "."))
-  def parse_name([schema, name]), do: {schema, name}
-  def parse_name([name]), do: {"public", name}
-
-  def format_prefix("public"), do: ""
-  def format_prefix(name), do: ", prefix: \"#{name}\""
-
-  def format_primary_key(fields) do
-    if Enum.any?(fields, &has_primary_key/1) do
-      ""
-    else
-      ", primary_key: false"
-    end
-  end
-
-  def has_primary_key(%{primary_key: true}), do: true
-  def has_primary_key(%{name: "id"}), do: true
-  def has_primary_key(_), do: false
-
-  def format_field(field) do
-    values = for key <- [:name, :type, :size, :precision, :scale, :default, :null],
-      Map.has_key?(field, key), do: format_field(key, field[key])
-    "      add #{Enum.join(values, ", ")}\n"
-  end
-
-  def format_field(:name, value), do: ":#{value}"
-  def format_field(:type, value), do: ":#{value}"
-  def format_field(:default, value) when is_integer(value), do: "default: #{value}"
-  def format_field(:default, value) when is_float(value), do: "default: #{value}"
-  def format_field(:default, value) when is_boolean(value), do: "default: #{value}"
-  def format_field(:default, value) when value in ["", "{}", "[]"] do
-    ~s(default: "#{value}")
-  end
-  def format_field(:default, value) when is_binary(value) do
-    ~s|default: fragment("#{value}")|
-  end
-  def format_field(key, value), do: "#{key}: #{value}"
 
   defmodule ParseError do
     defexception message: "default message"

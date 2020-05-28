@@ -1,9 +1,71 @@
 defmodule Mix.Tasks.Ecto.Extract.Migrations.CreateTable do
-
   alias Mix.Tasks.Ecto.Extract.Migrations.ParseError
+  alias Mix.Tasks.Ecto.Extract.Migrations
 
-  def parse_sql({line, _index}, {_fun, local, global}) do
+  @app :ecto_extract_migrations
+
+  def create_migration(data, bindings) do
+    Mix.shell().info("#{data[:type]} #{data[:table]} #{inspect data[:fields]}")
+    {schema, name} = parse_table_name(data[:table])
+    module_name = "#{Macro.camelize(schema)}.#{Macro.camelize(name)}"
+
+    bindings = Keyword.merge(bindings, [
+      module_name: module_name,
+      table: name,
+      prefix: format_prefix(schema),
+      primary_key: format_primary_key(data[:fields]),
+      fields: Enum.map(data[:fields], &format_field/1)
+    ])
+
+    template_dir = Application.app_dir(@app, ["priv", "templates"])
+    template_path = Path.join(template_dir, "create_table.eex")
+    Migrations.eval_template(template_path, bindings)
+  end
+
+  def parse_table_name(name) when is_binary(name), do: parse_table_name(String.split(name, "."))
+  def parse_table_name([schema, name]), do: {schema, name}
+  def parse_table_name([name]), do: {"public", name}
+
+  def format_prefix("public"), do: ""
+  def format_prefix(name), do: ", prefix: \"#{name}\""
+
+  def format_primary_key(fields) do
+    if Enum.any?(fields, &has_primary_key/1) do
+      ""
+    else
+      ", primary_key: false"
+    end
+  end
+
+  def has_primary_key(%{primary_key: true}), do: true
+  def has_primary_key(%{name: "id"}), do: true
+  def has_primary_key(_), do: false
+
+  def format_field(field) do
+    values = for key <- [:name, :type, :size, :precision, :scale, :default, :null],
+      Map.has_key?(field, key), do: format_field(key, field[key])
+    "      add #{Enum.join(values, ", ")}\n"
+  end
+
+  def format_field(:name, value), do: ":#{value}"
+  def format_field(:type, value), do: ":#{value}"
+  def format_field(:default, value) when is_integer(value), do: "default: #{value}"
+  def format_field(:default, value) when is_float(value), do: "default: #{value}"
+  def format_field(:default, value) when is_boolean(value), do: "default: #{value}"
+  def format_field(:default, value) when value in ["", "{}", "[]"] do
+    ~s(default: "#{value}")
+  end
+  def format_field(:default, value) when is_binary(value) do
+    ~s|default: fragment("#{value}")|
+  end
+  def format_field(key, value), do: "#{key}: #{value}"
+
+
+  @doc "Parse line of SQL"
+  @spec parse_sql_line({String.t(), non_neg_integer}, {fun() | nil, list() | nil, list()}) :: {fun(), list(), list()}
+  def parse_sql_line({line, _index}, {_fun, local, global}) do
     # Mix.shell().info("create_table> #{line} #{inspect local}")
+    local = local || []
 
     line = String.trim(line)
 
@@ -11,19 +73,26 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations.CreateTable do
       local = Enum.reverse([line | local])
       sql = Enum.join(local)
 
-      # Mix.shell().info("create_table> #{sql}")
-
-      case Regex.named_captures(~r/\s*CREATE\s+TABLE\s+(?<table>[\w\."]+)\s+\((?<fields>.*)\);$/, sql) do
-        nil ->
-          raise ParseError, line: line, message: "create table: #{sql}"
-        data ->
-          # Mix.shell().info("create_table> SQL #{sql}")
-          field_data = parse_fields(data["fields"] <> ",", %{}, [])
-          # Mix.shell().info("create_table> table: #{data["table"]} #{inspect field_data}")
-          {nil, nil, [%{type: :create_table, sql: sql, table: data["table"], fields: field_data} | global]}
+      case parse_sql(sql) do
+        {:ok, data} ->
+          {nil, nil, [data | global]}
+        {:error, reason} ->
+          raise ParseError, line: line, message: reason
       end
     else
-      {&parse_sql/2, [line | local], global}
+      {&parse_sql_line/2, [line | local], global}
+    end
+  end
+
+  @doc "Parse complete SQL statement"
+  @spec parse_sql(String.t()) :: {:ok, Map.t} | {:error, String.t()}
+  def parse_sql(sql) do
+    case Regex.named_captures(~r/\s*CREATE\s+TABLE\s+(?<table>[\w\."]+)\s+\((?<fields>.*)\);$/i, sql) do
+      nil ->
+        {:error, "Could not match CREATE TABLE"}
+      data ->
+        field_data = parse_fields(data["fields"] <> ",", %{}, [])
+        {:ok, %{type: :create_table, sql: sql, table: data["table"], fields: field_data}}
     end
   end
 
