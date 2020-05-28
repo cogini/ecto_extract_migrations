@@ -36,9 +36,11 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
     ]
     {overrides, _} = OptionParser.parse!(args, opts)
 
-    migrations_path = overrides[:migrations_path] || @migrations_path
-    sql_file = overrides[:sql_file]
     repo = overrides[:repo] || "Repo"
+    repo_dir = Macro.underscore(repo)
+    default_migrations_path = Path.join(["priv", repo_dir, "migrations"])
+    migrations_path = overrides[:migrations_path] || default_migrations_path
+    sql_file = overrides[:sql_file]
 
     :ok = File.mkdir_p(migrations_path)
 
@@ -59,9 +61,13 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
       case data.type do
         :table ->
           {:ok, migration} = Table.create_migration(data, bindings)
+          filename = Path.join(migrations_path, "table_#{data.schema}_#{data.table}.exs")
+          Mix.shell().info(filename)
           Mix.shell().info(migration)
         :schema ->
           {:ok, migration} = Schema.create_migration(data, bindings)
+          filename = Path.join(migrations_path, "schema_#{data.schema}.exs")
+          Mix.shell().info(filename)
           Mix.shell().info(migration)
       end
     end

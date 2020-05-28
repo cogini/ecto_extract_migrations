@@ -2,10 +2,10 @@ defmodule <%= repo %>.Migrations.<%= module_name %> do
   use Ecto.Migration
 
   def up do
-    execute("create schema if not exists <%= name %>")
+    execute("create schema if not exists <%= schema %>")
   end
 
   def down do
-    execute("drop schema if exists <%= name %>")
+    execute("drop schema if exists <%= schema %>")
   end
 end

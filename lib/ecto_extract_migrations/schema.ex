@@ -6,9 +6,11 @@ defmodule EctoExtractMigrations.Schema do
 
   def create_migration(data, bindings) do
     Mix.shell().info("#{data[:type]} #{data[:name]}")
+
+    schema = data.schema
     bindings = Keyword.merge(bindings, [
-      name: data[:name],
-      module_name: data[:name]
+      schema: schema,
+      module_name: Macro.camelize(schema)
     ])
 
     template_dir = Application.app_dir(@app, ["priv", "templates"])
@@ -25,7 +27,7 @@ defmodule EctoExtractMigrations.Schema do
       nil ->
         raise ParseError, line: index, message: "Could not match CREATE SCHEMA line"
       data ->
-        {nil, nil, [%{type: :schema, sql: sql, name: data["name"]} | global]}
+        {nil, nil, [%{type: :schema, sql: sql, schema: data["name"]} | global]}
     end
   end
 

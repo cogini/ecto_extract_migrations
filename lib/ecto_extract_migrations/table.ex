@@ -4,20 +4,20 @@ defmodule EctoExtractMigrations.Table do
   @app :ecto_extract_migrations
 
   def create_migration(data, bindings) do
-    # Mix.shell().info("#{data[:type]} #{data[:table]} #{inspect data[:fields]}")
-    {schema, name} = parse_table_name(data[:table])
-    module_name = "#{Macro.camelize(schema)}.#{Macro.camelize(name)}"
+    schema = data.schema
+    table = data.table
 
     bindings = Keyword.merge(bindings, [
-      module_name: module_name,
-      table: name,
+      module_name: "#{Macro.camelize(schema)}.#{Macro.camelize(table)}",
+      table: table,
+      schema: schema,
       prefix: format_prefix(schema),
       primary_key: format_primary_key(data[:fields]),
       fields: Enum.map(data[:fields], &format_field/1)
     ])
 
     template_dir = Application.app_dir(@app, ["priv", "templates"])
-    template_path = Path.join(template_dir, "create_table.eex")
+    template_path = Path.join(template_dir, "table.eex")
     EctoExtractMigrations.eval_template(template_path, bindings)
   end
 
@@ -91,7 +91,8 @@ defmodule EctoExtractMigrations.Table do
         {:error, "Could not match CREATE TABLE"}
       data ->
         field_data = parse_fields(data["fields"] <> ",", %{}, [])
-        {:ok, %{type: :table, sql: sql, table: data["table"], fields: field_data}}
+        {schema, table} = parse_table_name(data["table"])
+        {:ok, %{type: :table, sql: sql, schema: schema, table: table, fields: field_data}}
     end
   end
 
