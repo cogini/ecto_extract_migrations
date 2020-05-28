@@ -46,9 +46,6 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
     {_, _, results} =
       sql_file
       |> File.stream!
-      # |> Stream.map(&String.trim_trailing/1)
-      # |> Stream.reject(&String.match?(&1, ~r/^\s*--/)) # skip comments
-      # |> Stream.reject(&String.match?(&1, ~r/^\s*$/))  # skip blank lines
       |> Stream.with_index
       |> Enum.reduce({nil, nil, []}, &dispatch/2)
 
