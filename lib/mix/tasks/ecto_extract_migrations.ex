@@ -56,22 +56,26 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
       repo: repo,
     ]
 
-    for data <- objects do
+    objects = Enum.with_index(objects)
+
+    for {data, index} <- objects do
       Mix.shell().info("SQL: #{data[:sql]}")
+      prefix = to_string(:io_lib.format('~3..0b', [index]))
       case data.type do
         :table ->
           {:ok, migration} = Table.create_migration(data, bindings)
-          filename = Path.join(migrations_path, "table_#{data.schema}_#{data.table}.exs")
-          Mix.shell().info(filename)
           Mix.shell().info(migration)
+          filename = Path.join(migrations_path, "#{prefix}_table_#{data.schema}_#{data.table}.exs")
+          Mix.shell().info(filename)
+          :ok = File.write(filename, migration)
         :schema ->
           {:ok, migration} = Schema.create_migration(data, bindings)
-          filename = Path.join(migrations_path, "schema_#{data.schema}.exs")
-          Mix.shell().info(filename)
           Mix.shell().info(migration)
+          filename = Path.join(migrations_path, "#{prefix}_schema_#{data.schema}.exs")
+          Mix.shell().info(filename)
+          :ok = File.write(filename, migration)
       end
     end
-
   end
 
   def dispatch({line, index}, {nil, _local, global} = state) do
