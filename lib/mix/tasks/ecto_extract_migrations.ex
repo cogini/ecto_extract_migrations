@@ -62,7 +62,7 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
           Mix.shell().info(migration)
         :schema ->
           {:ok, migration} = Schema.create_migration(data, bindings)
-          # Mix.shell().info(migration)
+          Mix.shell().info(migration)
       end
     end
 
