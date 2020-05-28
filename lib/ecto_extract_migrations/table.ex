@@ -1,11 +1,10 @@
-defmodule Mix.Tasks.Ecto.Extract.Migrations.CreateTable do
-  alias Mix.Tasks.Ecto.Extract.Migrations.ParseError
-  alias Mix.Tasks.Ecto.Extract.Migrations
+defmodule EctoExtractMigrations.Table do
+  alias EctoExtractMigrations.ParseError
 
   @app :ecto_extract_migrations
 
   def create_migration(data, bindings) do
-    Mix.shell().info("#{data[:type]} #{data[:table]} #{inspect data[:fields]}")
+    # Mix.shell().info("#{data[:type]} #{data[:table]} #{inspect data[:fields]}")
     {schema, name} = parse_table_name(data[:table])
     module_name = "#{Macro.camelize(schema)}.#{Macro.camelize(name)}"
 
@@ -19,7 +18,7 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations.CreateTable do
 
     template_dir = Application.app_dir(@app, ["priv", "templates"])
     template_path = Path.join(template_dir, "create_table.eex")
-    Migrations.eval_template(template_path, bindings)
+    EctoExtractMigrations.eval_template(template_path, bindings)
   end
 
   def parse_table_name(name) when is_binary(name), do: parse_table_name(String.split(name, "."))
@@ -63,7 +62,7 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations.CreateTable do
 
   @doc "Parse line of SQL"
   @spec parse_sql_line({String.t(), non_neg_integer}, {fun() | nil, list() | nil, list()}) :: {fun(), list(), list()}
-  def parse_sql_line({line, _index}, {_fun, local, global}) do
+  def parse_sql_line({line, index}, {_fun, local, global}) do
     # Mix.shell().info("create_table> #{line} #{inspect local}")
     local = local || []
 
@@ -77,7 +76,7 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations.CreateTable do
         {:ok, data} ->
           {nil, nil, [data | global]}
         {:error, reason} ->
-          raise ParseError, line: line, message: reason
+          raise ParseError, line: index, message: reason
       end
     else
       {&parse_sql_line/2, [line | local], global}
@@ -92,7 +91,7 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations.CreateTable do
         {:error, "Could not match CREATE TABLE"}
       data ->
         field_data = parse_fields(data["fields"] <> ",", %{}, [])
-        {:ok, %{type: :create_table, sql: sql, table: data["table"], fields: field_data}}
+        {:ok, %{type: :table, sql: sql, table: data["table"], fields: field_data}}
     end
   end
 

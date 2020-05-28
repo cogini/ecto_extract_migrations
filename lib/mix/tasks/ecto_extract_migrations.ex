@@ -15,7 +15,8 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
   """
   @shortdoc "Initialize template files"
 
-  alias Mix.Tasks.Ecto.Extract.Migrations.CreateTable
+  alias EctoExtractMigrations.Table
+  alias EctoExtractMigrations.Schema
 
   # Directory where output migration files go
   # TODO: this should be generated from repo name
@@ -55,8 +56,14 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
 
     for data <- objects do
       Mix.shell().info("SQL: #{data[:sql]}")
-      {:ok, migration} = CreateTable.create_migration(data, bindings)
-      Mix.shell().info(migration)
+      case data.type do
+        :table ->
+          {:ok, migration} = Table.create_migration(data, bindings)
+          Mix.shell().info(migration)
+        :schema ->
+          {:ok, migration} = Schema.create_migration(data, bindings)
+          # Mix.shell().info(migration)
+      end
     end
 
   end
@@ -69,24 +76,13 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
       String.match?(line, ~r/^\s*$/) ->   # skip blank lines
         state
       String.match?(line, ~r/^\s*CREATE TABLE/i) ->
-        CreateTable.parse_sql_line({line, index}, {nil, nil, global})
+        Table.parse_sql_line({line, index}, {nil, nil, global})
+      String.match?(line, ~r/^\s*CREATE SCHEMA/i) ->
+        Schema.parse_sql_line({line, index}, {nil, nil, global})
       true ->
         state
     end
   end
   def dispatch({line, index}, {fun, _local, _global} = state), do: fun.({line, index}, state)
 
-
-  @doc "Evaluate template file with bindings"
-  @spec eval_template(Path.t(), Keyword.t()) :: {:ok, binary} | {:error, term}
-  def eval_template(template_file, bindings \\ []) do
-    {:ok, EEx.eval_file(template_file, bindings, trim: true)}
-  rescue
-    e ->
-      {:error, {:template, e}}
-  end
-
-  defmodule ParseError do
-    defexception message: "default message"
-  end
 end

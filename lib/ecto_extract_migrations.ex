@@ -3,16 +3,16 @@ defmodule EctoExtractMigrations do
   Documentation for `EctoExtractMigrations`.
   """
 
-  @doc """
-  Hello world.
+  defmodule ParseError do
+    defexception message: "default message"
+  end
 
-  ## Examples
-
-      iex> EctoExtractMigrations.hello()
-      :world
-
-  """
-  def hello do
-    :world
+  @doc "Evaluate template file with bindings"
+  @spec eval_template(Path.t(), Keyword.t()) :: {:ok, binary} | {:error, term}
+  def eval_template(template_file, bindings \\ []) do
+    {:ok, EEx.eval_file(template_file, bindings, trim: true)}
+  rescue
+    e ->
+      {:error, {:template, e}}
   end
 end
