@@ -60,11 +60,17 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
       prefix = to_string(:io_lib.format('~3..0b', [index]))
       case data.type do
         :table ->
-          {:ok, migration} = Table.create_migration(data, bindings)
-          Mix.shell().info(migration)
-          filename = Path.join(migrations_path, "#{prefix}_table_#{data.schema}_#{data.table}.exs")
-          Mix.shell().info(filename)
-          :ok = File.write(filename, migration)
+          if data.table == "schema_migrations" do
+            # schema_migrations is created by ecto.migrate itself
+            Mix.shell().info("Skipping schema_migrations")
+            :ok
+          else
+            {:ok, migration} = Table.create_migration(data, bindings)
+            Mix.shell().info(migration)
+            filename = Path.join(migrations_path, "#{prefix}_table_#{data.schema}_#{data.table}.exs")
+            Mix.shell().info(filename)
+            :ok = File.write(filename, migration)
+          end
         :schema ->
           {:ok, migration} = Schema.create_migration(data, bindings)
           Mix.shell().info(migration)
