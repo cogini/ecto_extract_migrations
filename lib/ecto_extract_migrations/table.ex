@@ -115,20 +115,11 @@ defmodule EctoExtractMigrations.Table do
     end
   end
 
-  # def parse_table_name(name) when is_binary(name), do: parse_table_name(String.split(name, "."))
-  # def parse_table_name([schema, name]), do: parse_table_name({schema, name})
-  # def parse_table_name([name]), do: parse_table_name({"public", name})
-  # def parse_table_name({schema, "\"" <> name}), do: {schema, String.trim(name, "\"")}
-  # def parse_table_name(value), do: value
-
   def parse_table_name(name) do
     case CreateTable.parse_table_name(name) do
-      {:ok, [schema, ?., name], "", _, _, _} ->
-        {:ok, {schema, name}}
-      {:ok, [name], "", _, _, _} ->
-        {:ok, {"public", name}}
-      {:error, reason, _rest, _context, _line, _offset} ->
-        {:error, reason}
+      {:ok, [schema, ?., name], "", _, _, _} -> {:ok, {schema, name}}
+      {:ok, [name], "", _, _, _} -> {:ok, {"public", name}}
+      {:error, reason, _rest, _context, _line, _offset} -> {:error, reason}
     end
   end
 
