@@ -36,6 +36,7 @@ defmodule EctoExtractMigrations.Table do
 
   def has_primary_key(%{primary_key: true}), do: true
   def has_primary_key(%{name: "id"}), do: true
+  def has_primary_key(%{name: "rowid"}), do: true
   def has_primary_key(_), do: false
 
   # TODO: implement constraints
