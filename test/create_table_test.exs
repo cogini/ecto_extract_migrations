@@ -31,9 +31,9 @@ defmodule CreateTableTest do
   # end
 
   test "column" do
-    assert ["uid", "BYTEA", {:null, false}, {:primary_key, true}] == value(CreateTable.parse_column("uid BYTEA NOT NULL PRIMARY KEY,"))
-    assert ["isPersistent", "BOOLEAN", {:null, false}, "DEFAULT", {:boolean, false}] == value(CreateTable.parse_column("isPersistent BOOLEAN NOT NULL DEFAULT FALSE,"))
-    assert ["size", "INTEGER", {:null, false}, "DEFAULT", {:integer, 0}] == value(CreateTable.parse_column("size INTEGER NOT NULL DEFAULT 0,"))
+    assert [{:name, "uid"}, {:type, "BYTEA"}, {:null, false}, {:primary_key, true}] == value(CreateTable.parse_column("uid BYTEA NOT NULL PRIMARY KEY,"))
+    assert [{:name, "isPersistent"}, {:type, "BOOLEAN"}, {:null, false}, "DEFAULT", {:boolean, false}] == value(CreateTable.parse_column("isPersistent BOOLEAN NOT NULL DEFAULT FALSE,"))
+    assert [{:name, "size"}, {:type, "INTEGER"}, {:null, false}, "DEFAULT", {:integer, 0}] == value(CreateTable.parse_column("size INTEGER NOT NULL DEFAULT 0,"))
   end
 
   def value({:ok, value, _, _, _, _}), do: value

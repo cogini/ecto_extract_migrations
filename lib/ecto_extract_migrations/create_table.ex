@@ -90,7 +90,7 @@ defmodule EctoExtractMigrations.CreateTable do
       string("txid_snapshot"), string("TXID_SNAPSHOT"),
       string("uuid"), string("UUID"),
       string("xml"), string("XML"),
-    ])
+    ]) |> unwrap_and_tag(:type)
 
   collation =
     ignore(whitespace)
@@ -144,7 +144,7 @@ defmodule EctoExtractMigrations.CreateTable do
     # |> optional(null)
 
   column_spec =
-    column_name
+    column_name |> unwrap_and_tag(:name)
     |> ignore(whitespace)
     |> concat(data_type)
     |> ignore(optional(constraint_name))
