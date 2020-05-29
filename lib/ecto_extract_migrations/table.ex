@@ -107,7 +107,7 @@ defmodule EctoExtractMigrations.Table do
     # case Regex.named_captures(~r/\s*CREATE\s+TABLE\s+(?<table>[\w\."]+)\s+\((?<fields>.*)\);$/i, sql) do
     case Regex.named_captures(~r/^CREATE\s+TABLE\s+(?<table>[\w\."]+)\s+\((?<fields>.*)\);$/i, sql) do
       nil ->
-        {:error, "Could not match CREATE TABLE"}
+        {:error, "Could not parse CREATE TABLE"}
       data ->
         field_data = parse_fields(data["fields"] <> ",", %{}, [])
         {:ok, {schema, table}} = parse_table_name(data["table"])

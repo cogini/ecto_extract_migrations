@@ -8,7 +8,8 @@ defmodule EctoExtractMigrations.CreateTable do
                |> times(min: 1)
 
   # identifier = utf8_string([], min: 1)
-  identifier =utf8_string([?a..?z, ?A..?Z, ?0..?9, ?_], min: 1)
+  identifier = utf8_string([?a..?z, ?A..?Z, ?0..?9, ?_], min: 1)
+#  identifier = utf8_string([{:not, [?., ?;, ?(, ?}], min: 1)
 
   quoted_identifier = ignore(ascii_char([?"]))
                       |> concat(identifier)
@@ -20,7 +21,7 @@ defmodule EctoExtractMigrations.CreateTable do
   table_name = name
 
   schema_qualified_table_name = schema_name |> ascii_char([?.]) |> concat(table_name)
-  
+
   create_table = string("CREATE")
            |> ignore(whitespace)
            |> string("TABLE")
