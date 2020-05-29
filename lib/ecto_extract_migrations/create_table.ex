@@ -93,22 +93,38 @@ defmodule EctoExtractMigrations.CreateTable do
     ])
 
   collation =
-    string("COLLATION")
+    ignore(whitespace)
+    |> string("COLLATION")
     |> concat(name)
-    |> ignore(optional(whitespace))
 
   constraint_name =
-    string("CONSTRAINT")
-    |> ignore(whitespace)
+    ignore(whitespace)
+    |> string("CONSTRAINT")
     |> concat(name)
-    |> ignore(optional(whitespace))
 
   null =
-    choice([string("NULL"), string("NOT NULL")])
-    |> ignore(optional(whitespace))
+    ignore(whitespace)
+    |> choice([string("NULL") |> replace(true),
+      string("NOT NULL") |> replace(false)])
+    |> unwrap_and_tag(:null)
+
+  primary_key =
+    ignore(whitespace)
+    |> string("PRIMARY KEY")
+    |> replace(true)
+    |> unwrap_and_tag(:primary_key)
 
   default =
-    string("DEFAULT")
+    ignore(whitespace)
+    |> string("DEFAULT")
+    |> ignore(whitespace)
+    |> choice([
+      integer(min: 1) |> unwrap_and_tag(:integer),
+      choice([
+        string("TRUE") |> replace(true),
+        string("FALSE") |> replace(false)])
+        |> unwrap_and_tag(:boolean)
+    ])
 
 # [ CONSTRAINT constraint_name ]
 # { NOT NULL |
@@ -124,20 +140,20 @@ defmodule EctoExtractMigrations.CreateTable do
 # [ DEFERRABLE | NOT DEFERRABLE ] [ INITIALLY DEFERRED | INITIALLY IMMEDIATE ]
 
   column_constraint =
-    ignore(optional(constraint_name))
-    |> optional(null)
-    |> ignore(optional(whitespace))
+    (optional(constraint_name))
+    # |> optional(null)
 
   column_spec =
     column_name
     |> ignore(whitespace)
     |> concat(data_type)
-    |> ignore(optional(whitespace))
-    |> ignore(optional(column_constraint))
-    # |> optional(null)
+    |> ignore(optional(constraint_name))
+    |> optional(null)
+    |> optional(default)
+    |> optional(primary_key)
+    |> ignore(optional(ascii_char([?,])))
     # |> ignore(optional(collation))
     # |> ignore(optional(column_constraint))
-    # |> ignore(optional(ascii_char([?,])))
     # |> ignore(optional(whitespace))
 
   create_table =
