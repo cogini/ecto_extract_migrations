@@ -1,5 +1,6 @@
 defmodule EctoExtractMigrations.Table do
   alias EctoExtractMigrations.ParseError
+  alias EctoExtractMigrations.CreateTable
 
   @app :ecto_extract_migrations
 
@@ -109,16 +110,27 @@ defmodule EctoExtractMigrations.Table do
         {:error, "Could not match CREATE TABLE"}
       data ->
         field_data = parse_fields(data["fields"] <> ",", %{}, [])
-        {schema, table} = parse_table_name(data["table"])
+        {:ok, {schema, table}} = parse_table_name(data["table"])
         {:ok, %{type: :table, sql: sql, schema: schema, table: table, fields: field_data}}
     end
   end
 
-  def parse_table_name(name) when is_binary(name), do: parse_table_name(String.split(name, "."))
-  def parse_table_name([schema, name]), do: parse_table_name({schema, name})
-  def parse_table_name([name]), do: parse_table_name({"public", name})
-  def parse_table_name({schema, "\"" <> name}), do: {schema, String.trim(name, "\"")}
-  def parse_table_name(value), do: value
+  # def parse_table_name(name) when is_binary(name), do: parse_table_name(String.split(name, "."))
+  # def parse_table_name([schema, name]), do: parse_table_name({schema, name})
+  # def parse_table_name([name]), do: parse_table_name({"public", name})
+  # def parse_table_name({schema, "\"" <> name}), do: {schema, String.trim(name, "\"")}
+  # def parse_table_name(value), do: value
+
+  def parse_table_name(name) do
+    case CreateTable.parse_table_name(name) do
+      {:ok, [schema, ?., name], "", _, _, _} ->
+        {:ok, {schema, name}}
+      {:ok, [name], "", _, _, _} ->
+        {:ok, {"public", name}}
+      {:error, reason, _rest, _context, _line, _offset} ->
+        {:error, reason}
+    end
+  end
 
   def parse_fields(",", data, acc) do
     Enum.reverse([data | acc])
