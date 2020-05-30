@@ -173,28 +173,6 @@ defmodule EctoExtractMigrations.CreateTable do
           |> optional(string("[]"))
         )
         |> replace(""),
-      # string("'{}'")
-      #   |> ignore(
-      #     optional(
-      #       choice([
-      #         string("::jsonb"),
-      #         string("::json"),
-      #         string("::integer"),
-      #         string("::text"),
-      #       ])
-      #     )
-      #     |> optional(string("[]"))
-      #   )
-      # string("'[]'")
-      #   |> ignore(
-      #     optional(
-      #       choice([
-      #         string("::jsonb"),
-      #         string("::json"),
-      #       ])
-      #     )
-      #     |> optional(string("[]"))
-      #   )
       ignore(ascii_char([?']))
         |> utf8_string([{:not, ?'}], min: 1)
         |> ignore(ascii_char([?']))

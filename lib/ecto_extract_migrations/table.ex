@@ -68,8 +68,6 @@ defmodule EctoExtractMigrations.Table do
     end
   end
 
-  # def format_column(:type, :double_precision), do: ~s(:"double precision")
-  # def format_column(:type, value), do: ":#{value}"
   def format_column(:type, value) when is_list(value), do: ~s(:"#{Enum.join(value, ".")}")
   def format_column(:type, value), do: inspect(value)
   def format_column(:size, [precision, scale]), do: "precision: #{precision}, scale: #{scale}"
@@ -88,12 +86,6 @@ defmodule EctoExtractMigrations.Table do
     end
 
   end
-  # def format_column(:default, value) when value in ["", "{}", "[]"] do
-  #   ~s(default: "#{value}")
-  # end
-  # def format_column(:default, value) when is_binary(value) do
-  #   ~s|default: "#{value}")|
-  # end
   def format_column(key, value), do: "#{key}: #{value}"
 
   def escape(value), do: String.replace(value, "\\", "\\\\")
