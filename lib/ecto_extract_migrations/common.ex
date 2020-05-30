@@ -27,6 +27,19 @@ defmodule EctoExtractMigrations.Common do
     [String.downcase(value) |> String.to_existing_atom() | acc]
   end
 
+  def atom_type({name, :size}) do
+    uc = String.upcase(name)
+    a = String.to_atom(name)
+    choice([string(name), string(uc)])
+    |> replace(a)
+    |> unwrap_and_tag(:type)
+    |> optional(
+      ignore(ascii_char([?(]))
+      |> integer(min: 1)
+      |> ignore(ascii_char([?)]))
+      |> unwrap_and_tag(:size)
+    )
+  end
   def atom_type(name) do
     uc = String.upcase(name)
     a = String.to_atom(name)

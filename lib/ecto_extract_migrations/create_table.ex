@@ -36,10 +36,6 @@ defmodule EctoExtractMigrations.CreateTable do
     [String.downcase(value) |> String.to_existing_atom() | acc]
   end
 
-# bit [ (n) ]
-# bit varying [ (n) ]
-# character varying [ (n) ]
-# character [ (n) ]
 # interval [ fields ] [ (p) ]
 # numeric [ (p, s) ]
 # decimal [ (p, s) ]
@@ -52,13 +48,13 @@ defmodule EctoExtractMigrations.CreateTable do
     choice(Enum.map([
       "bigint",
       "bigserial",
-      "bit",
-      "bit varying",
+      {"bit", :size},
+      {"bit varying", :size},
       "boolean",
       "box",
       "bytea",
-      "character varying",
-      "character",
+      {"character varying", :size},
+      {"character", :size},
       "cidr",
       "circle",
       "date",

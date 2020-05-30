@@ -66,8 +66,8 @@ defmodule CreateTableTest do
     assert [%{name: "uid", null: false, primary_key: true, type: :bytea}] == value(CreateTable.parse_column("uid BYTEA NOT NULL PRIMARY KEY,"))
     assert [%{default: false, name: "isPersistent", null: false, type: :boolean}] == value(CreateTable.parse_column("isPersistent BOOLEAN NOT NULL DEFAULT FALSE,"))
     assert [%{default: 0, name: "size", null: false, type: :integer}] == value(CreateTable.parse_column("size INTEGER NOT NULL DEFAULT 0,"))
-    assert [%{}] == value(CreateTable.parse_column("member_id character varying(50) NOT NULL"))
-    assert [%{}] == value(CreateTable.parse_column("mbi character varying(50)"))
+    assert [%{name: "member_id", null: false, size: 50, type: :"character varying"}] == value(CreateTable.parse_column("member_id character varying(50) NOT NULL"))
+    assert [%{name: "mbi", size: 50, type: :"character varying"}] == value(CreateTable.parse_column("mbi character varying(50)"))
   end
 
   def value({:ok, value, _, _, _, _}), do: value
