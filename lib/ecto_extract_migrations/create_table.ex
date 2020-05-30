@@ -178,7 +178,17 @@ defmodule EctoExtractMigrations.CreateTable do
 
   defparsec :parsec_table_name, table_name
 
-  def parse(sql), do: value(parsec_create_table(sql))
+  def parse(sql) do
+    case CreateSchema.parsec_create_table(sql) do
+      {:ok, value, _, _, _, _} ->
+        {attrs, columns} = Enum.reduce(value, {%{}, []}, &reduce_table/2)
+        {:ok, Map.put(attrs, :columns: Enum.reverse(columns))}
+      {:error, reason, _, _, _, _} ->
+        {:error, reason}
+  end
+
+  def reduce_table(value, {m, l}) when is_map(value), do: {m, [value | l]}
+  def reduce_table({key, value}, {m, l}), do: {Map.put(m, key, value), l}
 
   def parse_table_name(name), do: value(parsec_table_name(name))
 

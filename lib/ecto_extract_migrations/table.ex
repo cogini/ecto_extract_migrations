@@ -101,10 +101,30 @@ defmodule EctoExtractMigrations.Table do
     end
   end
 
+  # @doc "Parse complete SQL statement"
+  # @spec parse_sql(String.t()) :: {:ok, Map.t()} | {:error, String.t()}
+  # def parse_sql(sql) do
+  #   case CreateTable.parse(sql) do
+  #     {:ok, value} ->
+
+  #       {:ok, %{type: :table, sql: sql, schema: schema, table: table, columns: column_data}}
+
+  #     {:error, reason} ->
+  #       {:error, "Parse CREATE TABLE: #{reason}"}
+  #   end
+  #   case Regex.named_captures(~r/^CREATE\s+TABLE\s+(?<table>[\w\."]+)\s+\((?<columns>.*)\);$/i, sql) do
+  #     nil ->
+  #       {:error, "Could not parse CREATE TABLE"}
+  #     data ->
+  #       column_data = parse_fields(data["columns"] <> ",", %{}, [])
+  #       {:ok, {schema, table}} = parse_table_name(data["table"])
+  #       {:ok, %{type: :table, sql: sql, schema: schema, table: table, columns: column_data}}
+  #   end
+  # end
 
   @doc "Parse complete SQL statement"
-  @spec parse_sql(String.t()) :: {:ok, Map.t()} | {:error, String.t()}
-  def parse_sql(sql) do
+  @spec parse_sql_old(String.t()) :: {:ok, Map.t()} | {:error, String.t()}
+  def parse_sql_old(sql) do
     case Regex.named_captures(~r/^CREATE\s+TABLE\s+(?<table>[\w\."]+)\s+\((?<columns>.*)\);$/i, sql) do
       nil ->
         {:error, "Could not parse CREATE TABLE"}
