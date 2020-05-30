@@ -84,7 +84,7 @@ defmodule EctoExtractMigrations.Table do
     # Mix.shell().info("create_table> #{line} #{inspect local}")
     local = local || []
 
-    line = String.trim(line)
+    # line = String.trim(line)
 
     if Regex.match?(~r/\);/, line) do
       local = Enum.reverse([line | local])
@@ -101,8 +101,9 @@ defmodule EctoExtractMigrations.Table do
     end
   end
 
+
   @doc "Parse complete SQL statement"
-  @spec parse_sql(String.t()) :: {:ok, Map.t} | {:error, String.t()}
+  @spec parse_sql(String.t()) :: {:ok, Map.t()} | {:error, String.t()}
   def parse_sql(sql) do
     case Regex.named_captures(~r/^CREATE\s+TABLE\s+(?<table>[\w\."]+)\s+\((?<columns>.*)\);$/i, sql) do
       nil ->
@@ -116,9 +117,9 @@ defmodule EctoExtractMigrations.Table do
 
   def parse_table_name(name) do
     case CreateTable.parse_table_name(name) do
-      {:ok, [schema, ?., name], "", _, _, _} -> {:ok, {schema, name}}
-      {:ok, [name], "", _, _, _} -> {:ok, {"public", name}}
-      {:error, reason, _rest, _context, _line, _offset} -> {:error, reason}
+      {:ok, [schema, name]} -> {:ok, {schema, name}}
+      {:ok, [name]} -> {:ok, {"public", name}}
+      {:error, reason} -> {:error, reason}
     end
   end
 

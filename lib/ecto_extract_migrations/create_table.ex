@@ -172,9 +172,17 @@ defmodule EctoExtractMigrations.CreateTable do
     |> ignore(string(");"))
     |> ignore(optional(whitespace))
 
-  defparsec :parse, create_table
+  defparsec :parsec_create_table, create_table
 
   defparsec :parse_column, column_spec
 
-  defparsec :parse_table_name, table_name
+  defparsec :parsec_table_name, table_name
+
+  def parse(sql), do: value(parsec_create_table(sql))
+
+  def parse_table_name(name), do: value(parsec_table_name(name))
+
+  def value({:ok, value, _, _, _, _}), do: {:ok, value}
+  def value({:error, value, _, _, _, _}), do: {:error, value}
+
 end

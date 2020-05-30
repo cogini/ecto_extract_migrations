@@ -3,15 +3,19 @@ defmodule EctoExtractMigrations.CreateSchema do
 
   alias EctoExtractMigrations.Common
 
+  # https://www.postgresql.org/docs/current/sql-createschema.html
   # CREATE SCHEMA foo;
 
+  whitespace = Common.whitespace()
+  name = Common.name()
+
   create_schema = ignore(string("CREATE"))
-           |> ignore(Common.whitespace())
+           |> ignore(whitespace)
            |> ignore(string("SCHEMA"))
-           |> ignore(Common.whitespace())
-           |> concat(Common.name())
+           |> ignore(whitespace)
+           |> concat(name) |> unwrap_and_tag(:name)
            |> ignore(ascii_char([?;]))
-           |> optional(Common.whitespace())
+           |> optional(whitespace)
 
   defparsec :parse, create_schema
 end

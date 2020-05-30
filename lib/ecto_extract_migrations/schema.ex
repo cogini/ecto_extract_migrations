@@ -1,6 +1,7 @@
 defmodule EctoExtractMigrations.Schema do
 
   alias EctoExtractMigrations.ParseError
+  alias EctoExtractMigrations.CreateSchema
 
   @app :ecto_extract_migrations
 
@@ -23,11 +24,11 @@ defmodule EctoExtractMigrations.Schema do
   def parse_sql_line({line, index}, {_fun, _local, global}) do
     sql = String.trim(line)
 
-    case Regex.named_captures(~r/CREATE\s+SCHEMA\s+(?<name>\w+)\s*;$/i, sql) do
-      nil ->
-        raise ParseError, line: index, message: "Could not match CREATE SCHEMA line"
-      data ->
-        {nil, nil, [%{type: :schema, sql: sql, schema: data["name"]} | global]}
+    case CreateSchema.parse(sql) do
+      {:ok, [{:name, name}], _, _, _, _} ->
+        {nil, nil, [%{type: :schema, sql: sql, schema: name} | global]}
+      {:error, reason, _, _, _, _} ->
+        raise ParseError, message: "Parse error: #{reason}"
     end
   end
 
