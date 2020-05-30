@@ -94,7 +94,7 @@ defmodule EctoExtractMigrations.Table do
         {:ok, data} ->
           {nil, nil, [data | global]}
         {:error, reason} ->
-          raise ParseError, line: index, message: reason
+          raise ParseError, line: index, message: "Parse error: #{reason}: #{sql}"
       end
     else
       {&parse_sql_line/2, [line | local], global}

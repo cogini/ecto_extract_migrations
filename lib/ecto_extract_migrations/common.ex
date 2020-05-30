@@ -26,4 +26,10 @@ defmodule EctoExtractMigrations.Common do
   def convert_type(value, acc) do
     [String.downcase(value) |> String.to_existing_atom() | acc]
   end
+
+  def atom_type(name) do
+    uc = String.upcase(name)
+    a = String.to_atom(name)
+    choice([string(name), string(uc)]) |> replace(a) |> unwrap_and_tag(:type)
+  end
 end

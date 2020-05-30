@@ -1,6 +1,7 @@
 defmodule EctoExtractMigrations.CreateTable do
   import NimbleParsec
 
+  require EctoExtractMigrations.Common
   alias EctoExtractMigrations.Common
 
   # https://www.postgresql.org/docs/current/sql-createtable.html
@@ -35,66 +36,131 @@ defmodule EctoExtractMigrations.CreateTable do
     [String.downcase(value) |> String.to_existing_atom() | acc]
   end
 
-  # https://www.postgresql.org/docs/current/datatype.html
-  data_type =
-    choice([
-      string("bigint"), string("BIGINT"),
-      string("bigserial"), string("BIGSERIAL"),
 # bit [ (n) ]
-      string("bit"), string("BIT"),
 # bit varying [ (n) ]
-      string("bit varying"), string("BIT VARYING"),
-      string("boolean"), string("BOOLEAN"),
-      string("box"), string("BOX"),
-      string("bytea"), string("BYTEA"),
-# character [ (n) ]
-      string("character"), string("CHARACTER"),
 # character varying [ (n) ]
-      string("character varying"), string("CHARACTER VARYING"),
-      string("cidr"), string("CIDR"),
-      string("circle"), string("CIRCLE"),
-      string("date"), string("DATE"),
-      string("double precision"), string("DOUBLE PRECISION"),
-      string("inet"), string("INET"),
-      string("integer"), string("INTEGER"),
+# character [ (n) ]
 # interval [ fields ] [ (p) ]
-      string("json"), string("JSON"),
-      string("jsonb"), string("JSONB"),
-      string("line"), string("LINE"),
-      string("lseg"), string("LSEG"),
-      string("macaddr"), string("MACADDR"),
-      string("macaddr8"), string("MACADDR8"),
-      string("money"), string("MONEY"),
 # numeric [ (p, s) ]
-      string("numeric"), string("NUMERIC"),
 # decimal [ (p, s) ]
-      string("decimal"), string("DECIMAL"),
-      string("path"), string("PATH"),
-      string("pg_lsn"), string("PG_LSN"),
-      string("point"), string("POINT"),
-      string("polygon"), string("POLYGON"),
-      string("real"), string("REAL"),
-      string("smallint"), string("SMALLINT"),
-      string("smallserial"), string("SMALLSERIAL"),
-      string("serial"), string("SERIAL"),
-      string("text"), string("TEXT"),
 # time [ (p) ] [ without time zone ]
-      string("time"), string("TIME"),
-      string("time without time zone"), string("TIME WITHOUT TIME ZONE"),
 # time [ (p) ] with time zone	timetz
-      string("time with time zone"), string("TIME WITH TIME ZONE"),
 # timestamp [ (p) ] [ without time zone ]
-      string("timestamp"), string("TIMESTAMP"),
 # timestamp [ (p) ] [ without time zone ]
-      string("timestamp without time zone"), string("TIMESTAMP WITHOUT TIME ZONE"),
 # timestamp [ (p) ] with time zone	timestamptz
-      string("timestamp with time zone"), string("TIMESTAMP WITH TIME ZONE"),
-      string("tsquery"), string("TSQUERY"),
-      string("tsvector"), string("TSVECTOR"),
-      string("txid_snapshot"), string("TXID_SNAPSHOT"),
-      string("uuid"), string("UUID"),
-      string("xml"), string("XML"),
-      ]) |> unwrap_and_tag(:type)
+  data_type =
+    choice(Enum.map([
+      "bigint",
+      "bigserial",
+      "bit",
+      "bit varying",
+      "boolean",
+      "box",
+      "bytea",
+      "character varying",
+      "character",
+      "cidr",
+      "circle",
+      "date",
+      "double precision",
+      "inet",
+      "integer",
+      "json",
+      "jsonb",
+      "line",
+      "lseg",
+      "macaddr",
+      "macaddr8",
+      "money",
+      "numeric",
+      "decimal",
+      "path",
+      "pg_lsn",
+      "point",
+      "polygon",
+      "real",
+      "smallint",
+      "smallserial",
+      "serial",
+      "text",
+      "time",
+      "time without time zone",
+      "time with time zone",
+      "timestamp",
+      "timestamp without time zone",
+      "timestamp with time zone",
+      "tsquery",
+      "tsvector",
+      "txid_snapshot",
+      "uuid",
+      "xml",
+    ], &Common.atom_type/1))
+
+  data_type_size =
+    ignore(ascii_char([?(]))
+    |> integer(min: 1)
+    ignore(ascii_char([?)]))
+
+  # https://www.postgresql.org/docs/current/datatype.html
+  # data_type =
+  #   choice([
+  #     simple_data_type("bigint"),
+  #     simple_data_type("bigserial"),
+# # bit [ (n) ]
+  #     simple_data_type("bit"),
+# # bit varying [ (n) ]
+  #     simple_data_type("bit varying"),
+  #     simple_data_type("boolean"),
+  #     simple_data_type("box"),
+  #     simple_data_type("bytea"),
+# # character varying [ (n) ]
+# #      choice([string("character varying"), string("CHARACTER VARYING")]) |> optional(data_type_size),
+# # character [ (n) ]
+  #     simple_data_type("character"),
+  #     simple_data_type("cidr"),
+  #     simple_data_type("circle"),
+  #     simple_data_type("date"),
+  #     simple_data_type("double precision"),
+  #     simple_data_type("inet"),
+  #     simple_data_type("integer"),
+# # interval [ fields ] [ (p) ]
+  #     simple_data_type("json"),
+  #     simple_data_type("jsonb"),
+  #     simple_data_type("line"),
+  #     simple_data_type("lseg"),
+  #     simple_data_type("macaddr"),
+  #     simple_data_type("macaddr8"),
+  #     simple_data_type("money"),
+# # numeric [ (p, s) ]
+  #     simple_data_type("numeric"),
+# # decimal [ (p, s) ]
+  #     simple_data_type("decimal"),
+  #     simple_data_type("path"),
+  #     simple_data_type("pg_lsn"),
+  #     simple_data_type("point"),
+  #     simple_data_type("polygon"),
+  #     simple_data_type("real"),
+  #     simple_data_type("smallint"),
+  #     simple_data_type("smallserial"),
+  #     simple_data_type("serial"),
+  #     simple_data_type("text"),
+# # time [ (p) ] [ without time zone ]
+  #     simple_data_type("time"),
+  #     simple_data_type("time without time zone"),
+# # time [ (p) ] with time zone	timetz
+  #     simple_data_type("time with time zone"),
+# # timestamp [ (p) ] [ without time zone ]
+  #     simple_data_type("timestamp"),
+# # timestamp [ (p) ] [ without time zone ]
+  #     simple_data_type("timestamp without time zone"),
+# # timestamp [ (p) ] with time zone	timestamptz
+  #     simple_data_type("timestamp with time zone"),
+  #     simple_data_type("tsquery"),
+  #     simple_data_type("tsvector"),
+  #     simple_data_type("txid_snapshot"),
+  #     simple_data_type("uuid"),
+  #     simple_data_type("xml"),
+  #     ])
 
   collation =
     ignore(whitespace)
