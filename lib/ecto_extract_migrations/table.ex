@@ -101,26 +101,21 @@ defmodule EctoExtractMigrations.Table do
     end
   end
 
-  # @doc "Parse complete SQL statement"
-  # @spec parse_sql(String.t()) :: {:ok, Map.t()} | {:error, String.t()}
-  # def parse_sql(sql) do
-  #   case CreateTable.parse(sql) do
-  #     {:ok, value} ->
+  @doc "Parse complete SQL statement"
+  @spec parse_sql(String.t()) :: {:ok, Map.t()} | {:error, String.t()}
+  def parse_sql(sql) do
+    case CreateTable.parse(sql) do
+      {:ok, value} ->
+        {schema, name} = default_schema(value.name)
+        {:ok, %{type: :table, sql: sql, schema: schema, table: name, columns: value.columns}}
+      {:error, reason} ->
+        {:error, "Parse CREATE TABLE: #{reason}"}
+    end
+  end
 
-  #       {:ok, %{type: :table, sql: sql, schema: schema, table: table, columns: column_data}}
+  def default_schema([schema, name]), do: {schema, name}
+  def default_schema([name]), do: {"public", name}
 
-  #     {:error, reason} ->
-  #       {:error, "Parse CREATE TABLE: #{reason}"}
-  #   end
-  #   case Regex.named_captures(~r/^CREATE\s+TABLE\s+(?<table>[\w\."]+)\s+\((?<columns>.*)\);$/i, sql) do
-  #     nil ->
-  #       {:error, "Could not parse CREATE TABLE"}
-  #     data ->
-  #       column_data = parse_fields(data["columns"] <> ",", %{}, [])
-  #       {:ok, {schema, table}} = parse_table_name(data["table"])
-  #       {:ok, %{type: :table, sql: sql, schema: schema, table: table, columns: column_data}}
-  #   end
-  # end
 
   @doc "Parse complete SQL statement"
   @spec parse_sql_old(String.t()) :: {:ok, Map.t()} | {:error, String.t()}

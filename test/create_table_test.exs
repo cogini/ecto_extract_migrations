@@ -12,10 +12,10 @@ defmodule CreateTableTest do
   end
 
   test "parse_create_table" do
-    assert {:ok, [{:name, "device"}]} == CreateTable.parse("CREATE TABLE device ();")
-    assert {:ok, [{:name, ["public", "data_table_974"]}]} == CreateTable.parse("CREATE TABLE public.data_table_974 ();")
-    assert {:ok, [{:name, ["public", "data_table__tamil__form"]}]} == CreateTable.parse("CREATE TABLE public.data_table__tamil__form ();")
-    assert {:ok, [{:name, ["public", "device"]}]} == CreateTable.parse("CREATE TABLE public.device ();")
+    assert {:ok, %{columns: [], name: "device"}} == CreateTable.parse("CREATE TABLE device ();")
+    assert {:ok, %{columns: [], name: ["public", "data_table_974"]}} == CreateTable.parse("CREATE TABLE public.data_table_974 ();")
+    assert {:ok, %{columns: [], name: ["public", "data_table__tamil__form"]}} == CreateTable.parse("CREATE TABLE public.data_table__tamil__form ();")
+    assert {:ok, %{columns: [], name: ["public", "device"]}} == CreateTable.parse("CREATE TABLE public.device ();")
   end
 
   test "parse_session" do
@@ -28,7 +28,15 @@ defmodule CreateTableTest do
     """
     #  avatar_id INTEGER REFERENCES warp_avatar(id) ON DELETE CASCADE);
     # assert ["device"] == value(CreateTable.parse(sql))
-    assert {:ok, [{:name, "session"}, %{name: "uid", null: false, primary_key: true, type: "BYTEA"}, %{default: false, name: "isPersistent", null: false, type: "BOOLEAN"}, %{name: "touched", type: "INTEGER"}]} == CreateTable.parse(sql)
+    expected = %{
+      name: "session",
+      columns: [
+        %{name: "uid", null: false, primary_key: true, type: "BYTEA"},
+        %{default: false, name: "isPersistent", null: false, type: "BOOLEAN"},
+        %{name: "touched", type: "INTEGER"}
+      ]
+    }
+    assert {:ok, expected} == CreateTable.parse(sql)
   end
 
   test "column" do
