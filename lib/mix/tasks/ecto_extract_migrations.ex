@@ -18,6 +18,7 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
   alias EctoExtractMigrations.Table
   alias EctoExtractMigrations.Schema
   alias EctoExtractMigrations.Type
+  alias EctoExtractMigrations.AlterTable
 
   use Mix.Task
 
@@ -94,14 +95,14 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
         state
       String.match?(line, ~r/^\s*$/) ->   # skip blank lines
         state
-      # String.match?(line, ~r/^\s*CREATE TABLE/i) ->
       String.match?(line, ~r/^CREATE TABLE/i) ->
         Table.parse_sql_line({line, index}, {nil, nil, global})
-      # String.match?(line, ~r/^\s*CREATE SCHEMA/i) ->
       String.match?(line, ~r/^CREATE SCHEMA/i) ->
         Schema.parse_sql_line({line, index}, {nil, nil, global})
       String.match?(line, ~r/^CREATE TYPE/i) ->
         Type.parse_sql_line({line, index}, {nil, nil, global})
+      # String.match?(line, ~r/^ALTER TABLE/i) ->
+      #   AlterTable.parse(line)
       true ->
         state
     end
