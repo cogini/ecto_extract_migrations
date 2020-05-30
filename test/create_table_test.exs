@@ -33,7 +33,7 @@ defmodule CreateTableTest do
   end
 
   test "table_constraint" do
-    assert [name: "case_coupon_current_uses_check", check: "((current_uses >= 0))"] == value(CreateTable.parsec_table_constraint("CONSTRAINT case_coupon_current_uses_check CHECK ((current_uses >= 0))"))
+    assert [{:type, :constraint}, {:name, "case_coupon_current_uses_check"}, {:check, "((current_uses >= 0))"}] == value(CreateTable.parsec_table_constraint("CONSTRAINT case_coupon_current_uses_check CHECK ((current_uses >= 0))"))
   end
 
   test "parse_session" do
@@ -77,6 +77,12 @@ defmodule CreateTableTest do
       ]
     }
     assert {:ok, expected} == CreateTable.parse(sql)
+  end
+
+  test "starts_with_number" do
+    assert EctoExtractMigrations.Table.starts_with_number("10")
+    assert EctoExtractMigrations.Table.starts_with_number("01")
+    refute EctoExtractMigrations.Table.starts_with_number("fish")
   end
 
   def value({:ok, value, "", _, _, _}), do: value

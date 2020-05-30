@@ -8,7 +8,7 @@ defmodule EctoExtractMigrations.Table do
     schema = data.schema
     table = data.table
 
-    # Mix.shell().info("create_table> #{inspect(data, limit: :infinity)}")
+    Mix.shell().info("create_table> #{inspect(data, limit: :infinity)}")
 
     bindings = Keyword.merge(bindings, [
       module_name: "#{Macro.camelize(schema)}.#{Macro.camelize(table)}",
@@ -16,7 +16,7 @@ defmodule EctoExtractMigrations.Table do
       schema: schema,
       prefix: format_prefix(schema),
       primary_key: format_primary_key(data[:columns]),
-      fields: Enum.map(data[:columns], &format_field/1)
+      fields: Enum.map(data[:columns], &format_column/1)
     ])
 
     template_dir = Application.app_dir(@app, ["priv", "templates"])
@@ -40,26 +40,46 @@ defmodule EctoExtractMigrations.Table do
   def has_primary_key(%{name: "rowid"}), do: true
   def has_primary_key(_), do: false
 
+  def munge_column(%{type: type, is_array: true} = value) do
+    value = %{value | type: {:array, type}}
+    Map.drop(value, [:is_array])
+  end
+  def munge_column(value), do: value
+
+  def starts_with_number(<<first::8, _::binary>>) when first >= ?0 and first <= ?9, do: true
+  def starts_with_number(_), do: false
+
   # TODO: implement constraints
-  def format_field(%{type: :constraint}), do: ""
-  def format_field(field) do
+  def format_column(%{type: :constraint}), do: ""
+  def format_column(column) do
+    column = munge_column(column)
     values = for key <- [:name, :type, :size, :precision, :scale, :default, :null],
-      Map.has_key?(field, key), do: format_field(key, field[key])
+      Map.has_key?(column, key), do: format_column(key, column[key])
     "      add #{Enum.join(values, ", ")}\n"
   end
 
-  # def format_field(:name, value) when is_atom(value), do: ~s(:"#{value}")
-  def format_field(:name, value) when is_atom(value), do: inspect(value)
-  def format_field(:name, value) when is_binary(value), do: ":#{value}"
-  def format_field(:type, :double_precision), do: ~s(:"double precision")
-  # def format_field(:type, value), do: ":#{value}"
-  def format_field(:type, value), do: inspect(value)
-  def format_field(:default, "fragment" <> _rest = value), do: "default: #{value}"
-  def format_field(:default, value) when is_integer(value), do: "default: #{value}"
-  def format_field(:default, value) when is_float(value), do: "default: #{value}"
-  def format_field(:default, value) when is_boolean(value), do: "default: #{value}"
-  # def format_field(:default, value) when is_binary(value), do: inspect(value)
-  def format_field(:default, value) when is_binary(value) do
+  # def format_column(:name, value) when is_atom(value), do: ~s(:"#{value}")
+  def format_column(:name, value) when is_atom(value), do: inspect(value)
+  def format_column(:name, value) when is_binary(value) do
+    if String.contains?(value, " ") or starts_with_number(value) do
+      ~s(:"#{value}")
+    else
+      ":#{value}"
+    end
+  end
+
+  # def format_column(:type, :double_precision), do: ~s(:"double precision")
+  # def format_column(:type, value), do: ":#{value}"
+  def format_column(:type, value) when is_list(value), do: ~s(:"#{Enum.join(value, ".")}")
+  def format_column(:type, value), do: inspect(value)
+  def format_column(:size, [precision, scale]), do: "precision: #{precision}, scale: #{scale}"
+  def format_column(:default, {:fragment, value}), do: ~s|default: fragment("#{value}")|
+  def format_column(:default, "fragment" <> _rest = value), do: "default: #{value}"
+  def format_column(:default, value) when is_integer(value), do: "default: #{value}"
+  def format_column(:default, value) when is_float(value), do: "default: #{value}"
+  def format_column(:default, value) when is_boolean(value), do: "default: #{value}"
+  # def format_column(:default, value) when is_binary(value), do: inspect(value)
+  def format_column(:default, value) when is_binary(value) do
     value = escape(value)
     if String.contains?(value, ~s(")) do
       ~s(default: """\n#{value}\n""")
@@ -68,13 +88,13 @@ defmodule EctoExtractMigrations.Table do
     end
 
   end
-  # def format_field(:default, value) when value in ["", "{}", "[]"] do
+  # def format_column(:default, value) when value in ["", "{}", "[]"] do
   #   ~s(default: "#{value}")
   # end
-  # def format_field(:default, value) when is_binary(value) do
+  # def format_column(:default, value) when is_binary(value) do
   #   ~s|default: "#{value}")|
   # end
-  def format_field(key, value), do: "#{key}: #{value}"
+  def format_column(key, value), do: "#{key}: #{value}"
 
   def escape(value), do: String.replace(value, "\\", "\\\\")
 

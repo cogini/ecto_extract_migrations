@@ -41,6 +41,12 @@ defmodule EctoExtractMigrations.CreateTable do
 
   # CONSTRAINT case_coupon_current_uses_check CHECK ((current_uses >= 0))
 
+  table_constraint_type =
+    string("CONSTRAINT") |> replace(:constraint) |> unwrap_and_tag(:type)
+
+  table_constraint_name =
+    name |> unwrap_and_tag(:name)
+
   table_constraint_check =
     ignore(string("CHECK"))
     |> ignore(whitespace)
@@ -48,9 +54,9 @@ defmodule EctoExtractMigrations.CreateTable do
     |> unwrap_and_tag(:check)
 
   table_constraint =
-    ignore(string("CONSTRAINT"))
+    table_constraint_type
     |> ignore(whitespace)
-    |> concat(name) |> unwrap_and_tag(:name)
+    |> concat(table_constraint_name)
     |> ignore(whitespace)
     |> concat(table_constraint_check)
 
@@ -115,9 +121,14 @@ defmodule EctoExtractMigrations.CreateTable do
       "xml",
     ], &Common.atom_type/1))
 
+  user_defined_type_bare =
+    name |> unwrap_and_tag(:type)
+
+  user_defined_type_schema_qualified =
+    schema_name |> ignore(ascii_char([?.])) |> concat(name) |> tag(:type)
+
   user_defined_type =
-    table_name
-    |> unwrap_and_tag(:user_defined_type)
+    choice([user_defined_type_schema_qualified, user_defined_type_bare])
 
   # collation =
   #   ignore(whitespace)
