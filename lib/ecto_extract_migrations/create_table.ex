@@ -31,6 +31,10 @@ defmodule EctoExtractMigrations.CreateTable do
 
   column_name = name
 
+  def convert_type(value, acc) do
+    [String.downcase(value) |> String.to_existing_atom() | acc]
+  end
+
   # https://www.postgresql.org/docs/current/datatype.html
   data_type =
     choice([
@@ -90,7 +94,7 @@ defmodule EctoExtractMigrations.CreateTable do
       string("txid_snapshot"), string("TXID_SNAPSHOT"),
       string("uuid"), string("UUID"),
       string("xml"), string("XML"),
-    ]) |> unwrap_and_tag(:type)
+      ]) |> unwrap_and_tag(:type)
 
   collation =
     ignore(whitespace)
@@ -116,15 +120,14 @@ defmodule EctoExtractMigrations.CreateTable do
 
   default =
     ignore(whitespace)
-    |> string("DEFAULT")
+    |> ignore(string("DEFAULT"))
     |> ignore(whitespace)
     |> choice([
-      integer(min: 1) |> unwrap_and_tag(:integer),
+      integer(min: 1),
       choice([
         string("TRUE") |> replace(true),
         string("FALSE") |> replace(false)])
-        |> unwrap_and_tag(:boolean)
-    ])
+    ]) |> unwrap_and_tag(:default)
 
 # [ CONSTRAINT constraint_name ]
 # { NOT NULL |
@@ -144,7 +147,8 @@ defmodule EctoExtractMigrations.CreateTable do
     # |> optional(null)
 
   column_spec =
-    column_name |> unwrap_and_tag(:name)
+    ignore(times(whitespace, min: 0))
+    |> concat(column_name) |> unwrap_and_tag(:name)
     |> ignore(whitespace)
     |> concat(data_type)
     |> ignore(optional(constraint_name))
@@ -152,6 +156,7 @@ defmodule EctoExtractMigrations.CreateTable do
     |> optional(default)
     |> optional(primary_key)
     |> ignore(optional(ascii_char([?,])))
+    |> reduce({Enum, :into, [%{}]})
     # |> ignore(optional(collation))
     # |> ignore(optional(column_constraint))
     # |> ignore(optional(whitespace))
@@ -167,7 +172,8 @@ defmodule EctoExtractMigrations.CreateTable do
     |> ignore(whitespace)
     |> ignore(ascii_char([?(]))
     |> ignore(optional(whitespace))
-    |> repeat(column_spec)
+    |> times(column_spec, min: 0)
+    |> ignore(times(whitespace, min: 0))
     |> ignore(string(");"))
     |> ignore(optional(whitespace))
 

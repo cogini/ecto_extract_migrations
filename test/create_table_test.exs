@@ -18,22 +18,23 @@ defmodule CreateTableTest do
     assert ["public", ?., "device"] == value(CreateTable.parse("CREATE TABLE public.device ();"))
   end
 
-  # test "parse_session" do
-  #   sql = """
-  #   CREATE TABLE session (
-  #     uid BYTEA NOT NULL PRIMARY KEY,
-  #     isPersistent BOOLEAN NOT NULL DEFAULT FALSE,
-  #     touched INTEGER
-  #   );
-  #   """
-  #   #  avatar_id INTEGER REFERENCES warp_avatar(id) ON DELETE CASCADE);
-  #   assert ["device"] == value(CreateTable.parse(sql))
-  # end
+  test "parse_session" do
+    sql = """
+    CREATE TABLE session (
+      uid BYTEA NOT NULL PRIMARY KEY,
+      isPersistent BOOLEAN NOT NULL DEFAULT FALSE,
+      touched INTEGER
+    );
+    """
+    #  avatar_id INTEGER REFERENCES warp_avatar(id) ON DELETE CASCADE);
+    # assert ["device"] == value(CreateTable.parse(sql))
+    assert ["device"] == CreateTable.parse(sql)
+  end
 
   test "column" do
-    assert [{:name, "uid"}, {:type, "BYTEA"}, {:null, false}, {:primary_key, true}] == value(CreateTable.parse_column("uid BYTEA NOT NULL PRIMARY KEY,"))
-    assert [{:name, "isPersistent"}, {:type, "BOOLEAN"}, {:null, false}, "DEFAULT", {:boolean, false}] == value(CreateTable.parse_column("isPersistent BOOLEAN NOT NULL DEFAULT FALSE,"))
-    assert [{:name, "size"}, {:type, "INTEGER"}, {:null, false}, "DEFAULT", {:integer, 0}] == value(CreateTable.parse_column("size INTEGER NOT NULL DEFAULT 0,"))
+    assert [%{name: "uid", null: false, primary_key: true, type: "BYTEA"}] == value(CreateTable.parse_column("uid BYTEA NOT NULL PRIMARY KEY,"))
+    assert [%{default: false, name: "isPersistent", null: false, type: "BOOLEAN"}] == value(CreateTable.parse_column("isPersistent BOOLEAN NOT NULL DEFAULT FALSE,"))
+    assert [%{default: 0, name: "size", null: false, type: "INTEGER"}] == value(CreateTable.parse_column("size INTEGER NOT NULL DEFAULT 0,"))
   end
 
   def value({:ok, value, _, _, _, _}), do: value

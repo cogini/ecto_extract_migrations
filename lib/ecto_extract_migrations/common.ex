@@ -22,4 +22,8 @@ defmodule EctoExtractMigrations.Common do
   def name do
     choice([identifier(), quoted_identifier()])
   end
+
+  def convert_type(value, acc) do
+    [String.downcase(value) |> String.to_existing_atom() | acc]
+  end
 end
