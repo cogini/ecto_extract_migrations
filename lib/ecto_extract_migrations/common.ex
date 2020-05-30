@@ -60,4 +60,5 @@ defmodule EctoExtractMigrations.Common do
     a = String.to_atom(name)
     choice([string(name), string(uc)]) |> replace(a) |> unwrap_and_tag(:type)
   end
+
 end

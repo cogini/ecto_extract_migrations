@@ -54,9 +54,32 @@ defmodule EctoExtractMigrations.AlterTable do
     |> concat(table_constraint_name)
     |> concat(table_constraint_primary_key)
 
+  column_name = name
+
+  alter_column =
+    ignore(string("ALTER"))
+    |> ignore(whitespace)
+    |> ignore(string("COLUMN"))
+    |> ignore(whitespace)
+    |> concat(column_name) |> unwrap_and_tag(:column_name)
+    |> ignore(whitespace)
+
+  default =
+    utf8_string([{:not, ?;}], min: 1)
+    |> unwrap_and_tag(:default)
+
+  set_default =
+    ignore(string("SET"))
+    |> ignore(whitespace)
+    |> ignore(string("DEFAULT"))
+    |> ignore(whitespace)
+    |> replace(:set_default) |> unwrap_and_tag(:action)
+    |> concat(default)
+
   action =
     ignore(whitespace)
-    |> times(add_table_constraint, min: 1)
+    # |> times(add_table_constraint, min: 1)
+    |> choice([add_table_constraint, alter_column |> concat(set_default)])
     |> ignore(optional(ascii_char([?,])))
 
   alter_table =

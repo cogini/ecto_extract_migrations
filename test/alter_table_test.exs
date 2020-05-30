@@ -47,6 +47,16 @@ defmodule AlterTableTest do
     ALTER TABLE ONLY chat.pending_chunk
         ADD CONSTRAINT pending_chunk_pkey PRIMARY KEY (uuid, chunk);
     """))
+
+    expected = %{
+      action: :set_default,
+      table_name: ["chat", "assignment"],
+      column_name: "id",
+      default: "nextval('chat.assignment_id_seq'::regclass)"
+    }
+    assert [expected] == value(AlterTable.parse("""
+    ALTER TABLE ONLY chat.assignment ALTER COLUMN id SET DEFAULT nextval('chat.assignment_id_seq'::regclass);
+    """))
   end
 
   def value({:ok, value, "", _, _, _}), do: value
