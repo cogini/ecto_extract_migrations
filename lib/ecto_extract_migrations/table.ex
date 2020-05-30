@@ -15,8 +15,8 @@ defmodule EctoExtractMigrations.Table do
       table: table,
       schema: schema,
       prefix: format_prefix(schema),
-      primary_key: format_primary_key(data[:fields]),
-      fields: Enum.map(data[:fields], &format_field/1)
+      primary_key: format_primary_key(data[:columns]),
+      fields: Enum.map(data[:columns], &format_field/1)
     ])
 
     template_dir = Application.app_dir(@app, ["priv", "templates"])
@@ -27,8 +27,8 @@ defmodule EctoExtractMigrations.Table do
   def format_prefix("public"), do: ""
   def format_prefix(name), do: ", prefix: \"#{name}\""
 
-  def format_primary_key(fields) do
-    if Enum.any?(fields, &has_primary_key/1) do
+  def format_primary_key(columns) do
+    if Enum.any?(columns, &has_primary_key/1) do
       ", primary_key: false"
     else
       ""
@@ -104,14 +104,13 @@ defmodule EctoExtractMigrations.Table do
   @doc "Parse complete SQL statement"
   @spec parse_sql(String.t()) :: {:ok, Map.t} | {:error, String.t()}
   def parse_sql(sql) do
-    # case Regex.named_captures(~r/\s*CREATE\s+TABLE\s+(?<table>[\w\."]+)\s+\((?<fields>.*)\);$/i, sql) do
-    case Regex.named_captures(~r/^CREATE\s+TABLE\s+(?<table>[\w\."]+)\s+\((?<fields>.*)\);$/i, sql) do
+    case Regex.named_captures(~r/^CREATE\s+TABLE\s+(?<table>[\w\."]+)\s+\((?<columns>.*)\);$/i, sql) do
       nil ->
         {:error, "Could not parse CREATE TABLE"}
       data ->
-        field_data = parse_fields(data["fields"] <> ",", %{}, [])
+        column_data = parse_fields(data["columns"] <> ",", %{}, [])
         {:ok, {schema, table}} = parse_table_name(data["table"])
-        {:ok, %{type: :table, sql: sql, schema: schema, table: table, fields: field_data}}
+        {:ok, %{type: :table, sql: sql, schema: schema, table: table, columns: column_data}}
     end
   end
 

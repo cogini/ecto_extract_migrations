@@ -23,9 +23,9 @@ defmodule EctoExtractMigrations.CreateTable do
     string("IF NOT EXISTS") |> ignore(whitespace)
 
   schema_name = name
-  bare_table_name = name
+  bare_table_name = name |> unwrap_and_tag(:name)
   schema_qualified_table_name =
-    schema_name |> ascii_char([?.]) |> concat(name)
+    schema_name |> ignore(ascii_char([?.])) |> concat(name) |> tag(:name)
 
   table_name = choice([schema_qualified_table_name, bare_table_name])
 
@@ -142,10 +142,6 @@ defmodule EctoExtractMigrations.CreateTable do
 #     [ ON DELETE referential_action ] [ ON UPDATE referential_action ] }
 # [ DEFERRABLE | NOT DEFERRABLE ] [ INITIALLY DEFERRED | INITIALLY IMMEDIATE ]
 
-  column_constraint =
-    (optional(constraint_name))
-    # |> optional(null)
-
   column_spec =
     ignore(times(whitespace, min: 0))
     |> concat(column_name) |> unwrap_and_tag(:name)
@@ -158,7 +154,6 @@ defmodule EctoExtractMigrations.CreateTable do
     |> ignore(optional(ascii_char([?,])))
     |> reduce({Enum, :into, [%{}]})
     # |> ignore(optional(collation))
-    # |> ignore(optional(column_constraint))
     # |> ignore(optional(whitespace))
 
   create_table =
