@@ -108,8 +108,8 @@ defmodule EctoExtractMigrations.Table do
       {:ok, value} ->
         {schema, name} = default_schema(value.name)
         {:ok, %{type: :table, sql: sql, schema: schema, table: name, columns: value.columns}}
-      {:error, reason} ->
-        {:error, "Parse CREATE TABLE: #{reason}"}
+      {:error, _, _, _, _, _} = error ->
+        {:error, "CREATE TABLE: #{inspect error}"}
     end
   end
 

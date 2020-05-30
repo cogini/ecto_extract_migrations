@@ -15,12 +15,12 @@ defmodule EctoExtractMigrations.Common do
 
   def quoted_identifier do
     ignore(ascii_char([?"]))
-    |> concat(identifier())
+    |> concat(utf8_string([?a..?z, ?A..?Z, ?0..?9, ?_, 32], min: 1))
     |> ignore(ascii_char([?"]))
   end
 
   def name do
-    choice([identifier(), quoted_identifier()])
+    choice([quoted_identifier(), identifier()])
   end
 
   def convert_type(value, acc) do
@@ -39,6 +39,21 @@ defmodule EctoExtractMigrations.Common do
       |> ignore(ascii_char([?)]))
       |> unwrap_and_tag(:size)
     )
+  end
+  def atom_type({name, [:precision, :scale]}) do
+    uc = String.upcase(name)
+    a = String.to_atom(name)
+    choice([string(name), string(uc)])
+    |> replace(a)
+    |> unwrap_and_tag(:type)
+    |> optional(
+        ignore(ascii_char([?(]))
+        |> integer(min: 1)
+        |> ignore(ascii_char([?,]))
+        |> integer(min: 1)
+        |> ignore(ascii_char([?)]))
+        |> tag(:size)
+      )
   end
   def atom_type(name) do
     uc = String.upcase(name)
