@@ -4,9 +4,7 @@ defmodule CreateSchemaTest do
   alias EctoExtractMigrations.CreateSchema
 
   test "parse" do
-    assert [{:name, "foo"}] == value(CreateSchema.parse("CREATE SCHEMA foo;"))
-    assert [{:name, "foo"}] == value(CreateSchema.parse("CREATE SCHEMA \"foo\";"))
+    assert {:ok, [{:name, "foo"}]} == CreateSchema.parse("CREATE SCHEMA foo;")
+    assert {:ok, [{:name, "foo"}]} == CreateSchema.parse("CREATE SCHEMA \"foo\";")
   end
-
-  def value({:ok, value, _, _, _, _}), do: value
 end

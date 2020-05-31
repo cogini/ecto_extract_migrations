@@ -10,10 +10,10 @@ defmodule AlterTableTest do
       primary_key: ["id"],
       table_name: ["chat", "assignment"]
     }
-    assert [expected] == value(AlterTable.parse("""
+    assert {:ok, expected} == AlterTable.parse("""
     ALTER TABLE ONLY chat.assignment
         ADD CONSTRAINT assignment_pkey PRIMARY KEY (id);
-    """))
+    """)
 
     expected = %{
       action: :add_constraint,
@@ -21,10 +21,10 @@ defmodule AlterTableTest do
       primary_key: ["id"],
       table_name: ["chat", "message"]
     }
-    assert [expected] == value(AlterTable.parse("""
+    assert {:ok, expected} == AlterTable.parse("""
     ALTER TABLE ONLY chat.message
         ADD CONSTRAINT message_pkey PRIMARY KEY (id);
-    """))
+    """)
 
     expected = %{
       action: :add_constraint,
@@ -32,10 +32,10 @@ defmodule AlterTableTest do
       primary_key: ["uuid"],
       table_name: ["chat", "message_upload"]
     }
-    assert [expected] == value(AlterTable.parse("""
+    assert {:ok, expected} == AlterTable.parse("""
     ALTER TABLE ONLY chat.message_upload
         ADD CONSTRAINT message_upload_pkey PRIMARY KEY (uuid);
-    """))
+    """)
 
     expected = %{
       action: :add_constraint,
@@ -43,20 +43,33 @@ defmodule AlterTableTest do
       primary_key: ["uuid", "chunk"],
       table_name: ["chat", "pending_chunk"]
     }
-    assert [expected] == value(AlterTable.parse("""
+    assert {:ok, expected} == AlterTable.parse("""
     ALTER TABLE ONLY chat.pending_chunk
         ADD CONSTRAINT pending_chunk_pkey PRIMARY KEY (uuid, chunk);
-    """))
+    """)
 
+    expected = %{
+      action: :add_constraint,
+      constraint_name: "session_token_key",
+      table_name: ["chat", "session"],
+      unique: ["token"]
+    }
+    assert {:ok, expected} == AlterTable.parse("""
+    ALTER TABLE ONLY chat.session                                                                                                                                                       ADD CONSTRAINT session_token_key UNIQUE (token);
+    """)
+  end
+
+  test "column constraint" do
     expected = %{
       action: :set_default,
       table_name: ["chat", "assignment"],
       column_name: "id",
       default: "nextval('chat.assignment_id_seq'::regclass)"
     }
-    assert [expected] == value(AlterTable.parse("""
+    assert {:ok, expected} == AlterTable.parse("""
     ALTER TABLE ONLY chat.assignment ALTER COLUMN id SET DEFAULT nextval('chat.assignment_id_seq'::regclass);
-    """))
+    """)
+
   end
 
   def value({:ok, value, "", _, _, _}), do: value
