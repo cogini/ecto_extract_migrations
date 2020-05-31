@@ -58,7 +58,7 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
       prefix = to_string(:io_lib.format('~3..0b', [index]))
       case type do
         :create_table ->
-          if data.name == "schema_migrations" do
+          if data.name == ["public", "schema_migrations"] do
             # schema_migrations is created by ecto.migrate itself
             Mix.shell().info("Skipping schema_migrations")
             :ok
@@ -77,7 +77,7 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
           Mix.shell().info(migration)
           :ok = File.write(filename, migration)
         :create_type ->
-          {:ok, migration} = Type.create_migration(data, bindings)
+          {:ok, migration} = Type.create_migration(Map.put(data, :sql, sql), bindings)
           [schema, name] = data.name
           filename = Path.join(migrations_path, "#{prefix}_type_#{schema}_#{name}.exs")
           Mix.shell().info(filename)
@@ -87,6 +87,7 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
           :ok
       end
     end
+
   end
 
   def collect_sql({line, idx}, nil = acc) do
