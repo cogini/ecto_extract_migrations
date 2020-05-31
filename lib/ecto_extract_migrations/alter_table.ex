@@ -9,9 +9,9 @@ defmodule EctoExtractMigrations.AlterTable do
   name = Common.name()
 
   schema_name = name
-  bare_table_name = name |> unwrap_and_tag(:table_name)
+  bare_table_name = name |> unwrap_and_tag(:table)
   schema_qualified_table_name =
-    schema_name |> ignore(ascii_char([?.])) |> concat(name) |> tag(:table_name)
+    schema_name |> ignore(ascii_char([?.])) |> concat(name) |> tag(:table)
 
   table_name = choice([schema_qualified_table_name, bare_table_name])
 
@@ -46,6 +46,42 @@ defmodule EctoExtractMigrations.AlterTable do
     |> ignore(optional(whitespace))
     |> tag(:unique)
 
+  on_delete =
+    ignore(whitespace)
+    |> ignore(string("ON DELETE"))
+    |> ignore(whitespace)
+    |> choice([
+      string("CASCADE") |> replace(:cascade),
+      string("RESTRICT") |> replace(:restrict),
+      string("SET NULL") |> replace(:set_null)
+    ])
+    |> unwrap_and_tag(:on_delete)
+
+  on_update =
+    ignore(whitespace)
+    |> ignore(string("ON UPDATE"))
+    |> ignore(whitespace)
+    |> choice([
+      string("CASCADE") |> replace(:cascade),
+      string("RESTRICT") |> replace(:restrict),
+      string("SET NULL") |> replace(:set_null)
+    ])
+    |> unwrap_and_tag(:on_update)
+
+  table_constraint_foreign_key =
+    ignore(whitespace)
+    |> ignore(string("FOREIGN KEY"))
+    |> ignore(whitespace)
+    |> concat(Common.column_list(:column))
+    |> ignore(whitespace)
+    |> ignore(string("REFERENCES"))
+    |> ignore(whitespace)
+    |> concat(Common.table_name(:references_table))
+    |> concat(Common.column_list(:references_column))
+    |> optional(on_delete)
+    |> optional(on_update)
+    |> optional(on_delete)
+
   # [ CONSTRAINT constraint_name ]
   # { CHECK ( expression ) [ NO INHERIT ] |
   #   UNIQUE ( column_name [, ... ] ) index_parameters |
@@ -62,7 +98,7 @@ defmodule EctoExtractMigrations.AlterTable do
     |> ignore(whitespace)
     |> replace(:add_constraint) |> unwrap_and_tag(:action)
     |> concat(table_constraint_name)
-    |> choice([table_constraint_primary_key, table_constraint_unique])
+    |> choice([table_constraint_primary_key, table_constraint_foreign_key, table_constraint_unique])
 
   column_name = name
 
@@ -71,7 +107,7 @@ defmodule EctoExtractMigrations.AlterTable do
     |> ignore(whitespace)
     |> ignore(string("COLUMN"))
     |> ignore(whitespace)
-    |> concat(column_name) |> unwrap_and_tag(:column_name)
+    |> concat(column_name) |> unwrap_and_tag(:column)
     |> ignore(whitespace)
 
   default =

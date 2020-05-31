@@ -61,4 +61,17 @@ defmodule EctoExtractMigrations.Common do
     choice([string(name), string(uc)]) |> replace(a) |> unwrap_and_tag(:type)
   end
 
+  def column_list(tag_name) do
+    ignore(ascii_char([?(]))
+    |> times(name() |> ignore(optional(ascii_char([?,]))) |> ignore(optional(whitespace())), min: 1)
+    |> ignore(ascii_char([?)]))
+    |> tag(tag_name)
+  end
+
+  def table_name(tag_name) do
+    bare = name() |> unwrap_and_tag(tag_name)
+    schema = name() |> ignore(ascii_char([?.])) |> concat(name()) |> tag(tag_name)
+    choice([schema, bare])
+  end
+
 end
