@@ -128,7 +128,7 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
   end
   def parser(:create_table), do: &EctoExtractMigrations.CreateTable.parse/1
   def parser(:create_schema), do: &EctoExtractMigrations.CreateSchema.parse/1
-  def parser(:create_type), do: &EctoExtractMigrations.Type.parse/1
+  def parser(:create_type), do: &EctoExtractMigrations.CreateType.parse/1
   def parser(:alter_table), do: &EctoExtractMigrations.AlterTable.parse/1
 
 end
