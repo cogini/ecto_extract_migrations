@@ -4,7 +4,7 @@ defmodule CreateSchemaTest do
   alias EctoExtractMigrations.CreateSchema
 
   test "parse" do
-    assert {:ok, [{:name, "foo"}]} == CreateSchema.parse("CREATE SCHEMA foo;")
-    assert {:ok, [{:name, "foo"}]} == CreateSchema.parse("CREATE SCHEMA \"foo\";")
+    assert {:ok, %{name: "foo"}} == CreateSchema.parse("CREATE SCHEMA foo;")
+    assert {:ok, %{name: "foo"}} == CreateSchema.parse("CREATE SCHEMA \"foo\";")
   end
 end

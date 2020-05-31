@@ -16,13 +16,14 @@ defmodule EctoExtractMigrations.CreateSchema do
     |> ignore(whitespace)
     |> concat(name) |> unwrap_and_tag(:name)
     |> ignore(ascii_char([?;]))
-    |> optional(whitespace)
+    |> ignore(optional(whitespace))
+    |> reduce({Enum, :into, [%{}]})
 
   defparsec :parsec_create_schema, create_schema
 
   def parse(sql) do
     case parsec_create_schema(sql) do
-      {:ok, value, _, _, _, _} -> {:ok, value}
+      {:ok, [value], _, _, _, _} -> {:ok, value}
       error -> error
     end
   end
