@@ -36,6 +36,16 @@ defmodule EctoExtractMigrations.AlterTable do
     |> ignore(optional(whitespace))
     |> tag(:primary_key)
 
+  table_constraint_unique =
+    ignore(whitespace)
+    |> ignore(string("UNIQUE"))
+    |> ignore(whitespace)
+    |> ignore(ascii_char([?(]))
+    |> times(name |> ignore(optional(ascii_char([?,]))) |> ignore(optional(whitespace)), min: 1)
+    |> ignore(ascii_char([?)]))
+    |> ignore(optional(whitespace))
+    |> tag(:unique)
+
   # [ CONSTRAINT constraint_name ]
   # { CHECK ( expression ) [ NO INHERIT ] |
   #   UNIQUE ( column_name [, ... ] ) index_parameters |
@@ -52,7 +62,7 @@ defmodule EctoExtractMigrations.AlterTable do
     |> ignore(whitespace)
     |> replace(:add_constraint) |> unwrap_and_tag(:action)
     |> concat(table_constraint_name)
-    |> concat(table_constraint_primary_key)
+    |> choice([table_constraint_primary_key, table_constraint_unique])
 
   column_name = name
 
@@ -95,5 +105,12 @@ defmodule EctoExtractMigrations.AlterTable do
     |> ignore(optional(whitespace))
     |> reduce({Enum, :into, [%{}]})
 
-  defparsec :parse, alter_table
+  defparsec :parsec_alter_table, alter_table
+
+  def parse(sql) do
+    case parsec_alter_table(sql) do
+      {:ok, [value], _, _, _, _} -> {:ok, value}
+      error -> error
+    end
+  end
 end
