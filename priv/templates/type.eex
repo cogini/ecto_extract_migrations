@@ -2,7 +2,9 @@ defmodule <%= repo %>.Migrations.<%= module_name %> do
   use Ecto.Migration
 
   def up do
-    execute("<%= sql %>")
+  execute("""
+  <%= sql %>
+  """)
   end
 
   def down do
