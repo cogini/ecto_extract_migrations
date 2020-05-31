@@ -116,19 +116,15 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
 
   def parse_sql({type, idx, lines}) do
     sql = Enum.join(lines)
+    # Mix.shell().info("SQL #{idx}\n#{sql}")
 
-    case apply(parser(type), [sql]) do
-      {:ok, _data} ->
-        # Mix.shell().info("#{inspect(data)}")
-        :ok
-      error ->
-        Mix.shell().info("SQL #{idx}\n#{sql}")
-        Mix.shell().info("#{inspect(error)}")
-    end
+    {:ok, data} = apply(sql_parser(type), [sql])
+    %{type: type, line: idx, sql: sql, data: data}
   end
-  def parser(:create_table), do: &EctoExtractMigrations.CreateTable.parse/1
-  def parser(:create_schema), do: &EctoExtractMigrations.CreateSchema.parse/1
-  def parser(:create_type), do: &EctoExtractMigrations.CreateType.parse/1
-  def parser(:alter_table), do: &EctoExtractMigrations.AlterTable.parse/1
+
+  def sql_parser(:create_table), do: &EctoExtractMigrations.CreateTable.parse/1
+  def sql_parser(:create_schema), do: &EctoExtractMigrations.CreateSchema.parse/1
+  def sql_parser(:create_type), do: &EctoExtractMigrations.CreateType.parse/1
+  def sql_parser(:alter_table), do: &EctoExtractMigrations.AlterTable.parse/1
 
 end
