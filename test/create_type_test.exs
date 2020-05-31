@@ -8,7 +8,7 @@ defmodule CreateTypeTest do
       labels: ["paid", "unpaid", "partial"],
       name: ["public", "case_payment_status"]
     }
-    assert {:ok, :expected} == CreateType.parse("""
+    assert {:ok, expected} == CreateType.parse("""
     CREATE TYPE public.case_payment_status AS ENUM (
         'paid',
         'unpaid',
