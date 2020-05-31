@@ -47,13 +47,24 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
       |> Stream.with_index
       |> Stream.transform(nil, &collect_sql/2)
       |> Stream.map(&parse_sql/1)
-      |> Enum.with_index
+      |> Enum.to_list
 
      bindings = [
        repo: repo,
      ]
 
-    for {%{type: type, sql: sql, data: data, idx: idx}, index} <- results do
+     # TODO
+     # merge alter table with table
+     # constraints
+     # CREATE VIEW
+
+       # %{action: :add_constraint, constraint_name: "message_pkey", primary_key: ["id"], table: ["chat", "message"]}
+     primary_keys =
+       for {%{type: type, data: data}} <- results, type == :alter_table, data.action == :add_constraint, into: %{} do
+         {data.table, data.primary_key}
+       end
+
+    for {%{type: type, sql: sql, data: data, idx: idx}, index} <- Enum.with_index(results) do
       Mix.shell().info("SQL #{type} #{idx} \n#{sql}\n#{inspect data}")
       prefix = to_string(:io_lib.format('~3..0b', [index]))
       case type do
@@ -116,34 +127,6 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
     end
   end
 
-  @spec extract_sql({String.t(), non_neg_integer},
-    {nil | {atom(), non_neg_integer, list(String.t())}, list(String.t())}) :: {term(), list(String.t())}
-  def extract_sql({line, idx}, {nil, sql} = state) do
-    cond do
-      String.match?(line, ~r/^CREATE TABLE/i) ->
-        {{:create_table, idx, ~r/;$/i, [line]}, sql}
-      String.match?(line, ~r/^CREATE SCHEMA/i) ->
-        {nil, [{:create_schema, idx, [line]} | sql]}
-      String.match?(line, ~r/^CREATE TYPE/i) ->
-        {{:create_type, idx, ~r/;$/, [line]}, sql}
-      String.match?(line, ~r/^ALTER TABLE/i) ->
-        if String.match?(line, ~r/;$/) do
-          {nil, [{:alter_table, idx, [line]} | sql]}
-        else
-          {{:alter_table, idx, ~r/;$/, [line]}, sql}
-        end
-      true ->
-        state
-    end
-  end
-  def extract_sql({line, _idx}, {{type, start_idx, stop, lines}, sql}) do
-    if String.match?(line, stop) do
-      {nil, [{type, start_idx, Enum.reverse([line | lines])} | sql]}
-    else
-      {{type, start_idx, stop, [line | lines]}, sql}
-    end
-  end
-
   def parse_sql({type, idx, lines}) do
     sql = Enum.join(lines)
     # Mix.shell().info("SQL #{idx}\n#{sql}")
@@ -156,5 +139,6 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
   def sql_parser(:create_schema), do: &EctoExtractMigrations.CreateSchema.parse/1
   def sql_parser(:create_type), do: &EctoExtractMigrations.CreateType.parse/1
   def sql_parser(:alter_table), do: &EctoExtractMigrations.AlterTable.parse/1
+
 
 end
