@@ -15,4 +15,5 @@ defmodule EctoExtractMigrations do
     e ->
       {:error, {:template, e}}
   end
+
 end

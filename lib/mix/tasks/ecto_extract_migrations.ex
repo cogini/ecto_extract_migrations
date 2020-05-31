@@ -15,11 +15,6 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
   """
   @shortdoc "Initialize template files"
 
-  alias EctoExtractMigrations.Table
-  alias EctoExtractMigrations.Schema
-  alias EctoExtractMigrations.Type
-  alias EctoExtractMigrations.AlterTable
-
   use Mix.Task
 
   @impl Mix.Task
@@ -42,71 +37,98 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
 
     :ok = File.mkdir_p(migrations_path)
 
-    {_, _, results} =
+    {_, results} =
       sql_file
       |> File.stream!
       |> Stream.with_index
-      |> Enum.reduce({nil, nil, []}, &dispatch/2)
+      |> Enum.reduce({nil, []}, &extract_sql/2)
 
-    objects = Enum.reverse(results)
+    sql = Enum.reverse(results)
 
-    bindings = [
-      repo: repo,
-    ]
+    # Enum.each(sql, fn {type, idx, lines} -> Mix.shell().info("SQL #{idx}\n#{Enum.join(lines)}") end)
+    Enum.each(sql, &parse_sql/1)
 
-    objects = Enum.with_index(objects)
+    # bindings = [
+    #   repo: repo,
+    # ]
 
-    for {data, index} <- objects do
-      Mix.shell().info("SQL: #{data[:sql]}")
-      prefix = to_string(:io_lib.format('~3..0b', [index]))
-      case data.type do
-        :table ->
-          if data.table == "schema_migrations" do
-            # schema_migrations is created by ecto.migrate itself
-            Mix.shell().info("Skipping schema_migrations")
-            :ok
-          else
-            {:ok, migration} = Table.create_migration(data, bindings)
-            Mix.shell().info(migration)
-            filename = Path.join(migrations_path, "#{prefix}_table_#{data.schema}_#{data.table}.exs")
-            Mix.shell().info(filename)
-            :ok = File.write(filename, migration)
-          end
-        :schema ->
-          {:ok, migration} = Schema.create_migration(data, bindings)
-          Mix.shell().info(migration)
-          filename = Path.join(migrations_path, "#{prefix}_schema_#{data.schema}.exs")
-          Mix.shell().info(filename)
-          :ok = File.write(filename, migration)
-        :type ->
-          {:ok, migration} = Type.create_migration(data, bindings)
-          Mix.shell().info(migration)
-          filename = Path.join(migrations_path, "#{prefix}_type_#{data.schema}.exs")
-          Mix.shell().info(filename)
-          :ok = File.write(filename, migration)
-      end
-    end
+    # objects = Enum.with_index(objects)
+
+    # for {data, index} <- objects do
+    #   Mix.shell().info("SQL: #{data[:sql]}")
+    #   prefix = to_string(:io_lib.format('~3..0b', [index]))
+    #   case data.type do
+    #     :table ->
+    #       if data.table == "schema_migrations" do
+    #         # schema_migrations is created by ecto.migrate itself
+    #         Mix.shell().info("Skipping schema_migrations")
+    #         :ok
+    #       else
+    #         {:ok, migration} = Table.create_migration(data, bindings)
+    #         Mix.shell().info(migration)
+    #         filename = Path.join(migrations_path, "#{prefix}_table_#{data.schema}_#{data.table}.exs")
+    #         Mix.shell().info(filename)
+    #         :ok = File.write(filename, migration)
+    #       end
+    #     :schema ->
+    #       {:ok, migration} = Schema.create_migration(data, bindings)
+    #       Mix.shell().info(migration)
+    #       filename = Path.join(migrations_path, "#{prefix}_schema_#{data.schema}.exs")
+    #       Mix.shell().info(filename)
+    #       :ok = File.write(filename, migration)
+    #     :type ->
+    #       {:ok, migration} = Type.create_migration(data, bindings)
+    #       Mix.shell().info(migration)
+    #       filename = Path.join(migrations_path, "#{prefix}_type_#{data.schema}.exs")
+    #       Mix.shell().info(filename)
+    #       :ok = File.write(filename, migration)
+    #   end
+    # end
   end
 
-  def dispatch({line, index}, {nil, _local, global} = state) do
-    # Mix.shell().info("dispatch> #{line}")
+  @spec extract_sql({String.t(), non_neg_integer},
+    {nil | {atom(), non_neg_integer, list(String.t())}, list(String.t())}) :: {term(), list(String.t())}
+  def extract_sql({line, idx}, {nil, sql} = state) do
     cond do
-      String.match?(line, ~r/^\s*--/) ->  # skip comments
-        state
-      String.match?(line, ~r/^\s*$/) ->   # skip blank lines
-        state
       String.match?(line, ~r/^CREATE TABLE/i) ->
-        Table.parse_sql_line({line, index}, {nil, nil, global})
+        {{:create_table, idx, ~r/;$/i, [line]}, sql}
       String.match?(line, ~r/^CREATE SCHEMA/i) ->
-        Schema.parse_sql_line({line, index}, {nil, nil, global})
+        {nil, [{:create_schema, idx, [line]} | sql]}
       String.match?(line, ~r/^CREATE TYPE/i) ->
-        Type.parse_sql_line({line, index}, {nil, nil, global})
-      # String.match?(line, ~r/^ALTER TABLE/i) ->
-      #   AlterTable.parse(line)
+        {{:create_type, idx, ~r/;$/, [line]}, sql}
+      String.match?(line, ~r/^ALTER TABLE/i) ->
+        if String.match?(line, ~r/;$/) do
+          {nil, [{:alter_table, idx, [line]} | sql]}
+        else
+          {{:alter_table, idx, ~r/;$/, [line]}, sql}
+        end
       true ->
         state
     end
   end
-  def dispatch({line, index}, {fun, _local, _global} = state), do: fun.({line, index}, state)
+  def extract_sql({line, _idx}, {{type, start_idx, stop, lines}, sql}) do
+    if String.match?(line, stop) do
+      {nil, [{type, start_idx, Enum.reverse([line | lines])} | sql]}
+    else
+      {{type, start_idx, stop, [line | lines]}, sql}
+    end
+  end
+
+  def parse_sql({type, idx, lines}) do
+    sql = Enum.join(lines)
+
+    case apply(parser(type), [sql]) do
+      {:ok, _data} ->
+        # Mix.shell().info("#{inspect(data)}")
+        :ok
+      error ->
+        Mix.shell().info("SQL #{idx}\n#{sql}")
+        Mix.shell().info("#{inspect(error)}")
+    end
+  end
+  def parser(:create_table), do: &EctoExtractMigrations.CreateTable.parse/1
+  def parser(:create_schema), do: &EctoExtractMigrations.CreateSchema.parse/1
+  def parser(:create_type), do: &EctoExtractMigrations.Type.parse/1
+  def parser(:alter_table), do: &EctoExtractMigrations.AlterTable.parse/1
 
 end

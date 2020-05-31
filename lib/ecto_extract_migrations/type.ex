@@ -70,4 +70,15 @@ defmodule EctoExtractMigrations.Type do
   def parse_name({schema, "\"" <> name}), do: {schema, String.trim(name, "\"")}
   def parse_name(value), do: value
 
+  @spec parse(String.t()) :: {:ok, Map.t()} | {:error, String.t()}
+  def parse(sql) do
+    case Regex.named_captures(~r/^CREATE\s+TYPE\s+(?<name>[\w\."]+)\s+AS (?<base>[^ ]+)\s+\((?<fields>.*)\);$/i, sql) do
+      nil ->
+        {:error, "Parse error: #{sql}"}
+      data ->
+        field_data = Regex.split(~r/\s*,\s*/, data["fields"])
+        {schema, name} = parse_name(data["name"])
+        {:ok, %{type: :type, sql: sql, schema: schema, name: name, base: data["base"], fields: field_data}}
+    end
+  end
 end

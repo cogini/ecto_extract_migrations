@@ -18,5 +18,12 @@ defmodule EctoExtractMigrations.CreateSchema do
     |> ignore(ascii_char([?;]))
     |> optional(whitespace)
 
-  defparsec :parse, create_schema
+  defparsec :parsec_create_schema, create_schema
+
+  def parse(sql) do
+    case parsec_create_schema(sql) do
+      {:ok, value, _, _, _, _} -> {:ok, value}
+      error -> error
+    end
+  end
 end

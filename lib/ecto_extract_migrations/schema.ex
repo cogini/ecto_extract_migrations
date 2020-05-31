@@ -21,7 +21,7 @@ defmodule EctoExtractMigrations.Schema do
 
   @doc "Parse line of SQL"
   @spec parse_sql_line({String.t(), non_neg_integer}, {fun() | nil, list() | nil, list()}) :: {fun(), list(), list()}
-  def parse_sql_line({line, index}, {_fun, _local, global}) do
+  def parse_sql_line({line, _index}, {_fun, _local, global}) do
     sql = String.trim(line)
 
     case CreateSchema.parse(sql) do
