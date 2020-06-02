@@ -11,8 +11,11 @@ defmodule EctoExtractMigrations.Table do
     columns = Enum.map(columns_data, &format_column/1)
 
     schema_table = "#{schema}.#{table}"
-    # constraints = Enum.map(Map.get(data, :constraints, []), &(format_constraint(schema_table, &1)))
-    constraints = []
+    constraints = Enum.map(Map.get(data, :constraints, []), &(format_constraint(&1, schema_table)))
+
+    if not Enum.empty?(constraints) do
+      Mix.shell().info("create_migration> constraints #{inspect constraints}}")
+    end
 
     bindings = Keyword.merge(bindings, [
       module_name: "#{Macro.camelize(schema)}.#{Macro.camelize(table)}",
@@ -33,6 +36,8 @@ defmodule EctoExtractMigrations.Table do
   def format_pk(false), do: ""
 
   def has_pk(value) when is_list(value), do: Enum.any?(value, &has_pk/1)
+  def has_pk(%{name: "id"}), do: true
+  def has_pk(%{name: "rowid"}), do: true
   def has_pk(%{primary_key: true}), do: true
   def has_pk(_), do: false
 
@@ -80,7 +85,7 @@ defmodule EctoExtractMigrations.Table do
 
   def escape(value), do: String.replace(value, "\\", "\\\\")
 
-  def format_constraint(table, opts) do
+  def format_constraint(opts, table) do
     ~s|constraint("#{table}", :#{opts.name}, check: "#{opts.check}")|
   end
 

@@ -1,0 +1,9 @@
+defmodule <%= repo %>.Migrations.<%= module_name %> do
+  use Ecto.Migration
+
+  def change do
+    <%= for constraint <- constraints do %>
+    create <%= constraint %>
+    <% end %>
+  end
+end

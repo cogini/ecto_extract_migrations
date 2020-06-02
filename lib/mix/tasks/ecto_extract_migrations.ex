@@ -18,6 +18,7 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
   alias EctoExtractMigrations.Schema
   alias EctoExtractMigrations.Type
   alias EctoExtractMigrations.Table
+  alias EctoExtractMigrations.View
 
   use Mix.Task
 
@@ -104,6 +105,13 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
           Mix.shell().info(filename)
           Mix.shell().info(migration)
           :ok = File.write(filename, migration)
+        :create_view ->
+          {:ok, migration} = View.create_migration(Map.put(data, :sql, sql), bindings)
+          [schema, name] = data.name
+          filename = Path.join(migrations_path, "#{prefix}_view_#{schema}_#{name}.exs")
+          Mix.shell().info(filename)
+          Mix.shell().info(migration)
+          :ok = File.write(filename, migration)
         :alter_table ->
           :ok
       end
@@ -120,6 +128,8 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
         {[{:create_schema, idx, [line]}], nil}
       String.match?(line, ~r/^CREATE TYPE/i) ->
         {[], {:create_type, idx, ~r/;$/i, [line]}}
+      String.match?(line, ~r/^CREATE VIEW/i) ->
+        {[], {:create_view, idx, ~r/;$/i, [line]}}
       String.match?(line, ~r/^ALTER TABLE/i) ->
         if String.match?(line, ~r/;$/) do
           {[{:alter_table, idx, [line]}], nil}
@@ -151,6 +161,7 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
   def sql_parser(:create_schema), do: &EctoExtractMigrations.Parsers.CreateSchema.parse/1
   def sql_parser(:create_type), do: &EctoExtractMigrations.Parsers.CreateType.parse/1
   def sql_parser(:alter_table), do: &EctoExtractMigrations.Parsers.AlterTable.parse/1
+  def sql_parser(:create_view), do: &EctoExtractMigrations.Parsers.CreateView.parse/1
 
   # %{action: :add_constraint, constraint_name: "message_pkey", primary_key: ["id"], table: ["chat", "message"]}
   def is_pk_constraint(%{type: :alter_table, data: %{action: :add_constraint, primary_key: _pk}}), do: true

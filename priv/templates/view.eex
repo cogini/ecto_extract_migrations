@@ -9,6 +9,7 @@ defmodule <%= repo %>.Migrations.<%= module_name %> do
   end
 
   def down do
-    execute("drop type if exists <%= schema %>.<%= name %>")
+    execute("drop view if exists <%= schema %>.<%= name %>")
   end
 end
+
