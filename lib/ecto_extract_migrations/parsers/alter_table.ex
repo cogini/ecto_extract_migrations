@@ -1,7 +1,7 @@
-defmodule EctoExtractMigrations.AlterTable do
+defmodule EctoExtractMigrations.Parsers.AlterTable do
   import NimbleParsec
 
-  alias EctoExtractMigrations.Common
+  alias EctoExtractMigrations.Parsers.Common
 
   # https://www.postgresql.org/docs/current/sql-altertable.html
 

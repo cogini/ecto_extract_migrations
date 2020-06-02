@@ -1,7 +1,7 @@
 defmodule CreateTableTest do
   use ExUnit.Case
 
-  alias EctoExtractMigrations.CreateTable
+  alias EctoExtractMigrations.Parsers.CreateTable
 
   test "parse_table_name" do
     assert {:ok, [{:name, "foo"}]} == CreateTable.parse_table_name("foo")

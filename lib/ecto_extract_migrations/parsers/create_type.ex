@@ -1,7 +1,7 @@
-defmodule EctoExtractMigrations.CreateType do
+defmodule EctoExtractMigrations.Parsers.CreateType do
   import NimbleParsec
 
-  alias EctoExtractMigrations.Common
+  alias EctoExtractMigrations.Parsers.Common
 
   # https://www.postgresql.org/docs/current/sql-createtype.html
   #   CREATE TYPE public.case_payment_status AS ENUM (

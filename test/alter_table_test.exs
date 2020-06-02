@@ -1,7 +1,7 @@
 defmodule AlterTableTest do
   use ExUnit.Case
 
-  alias EctoExtractMigrations.AlterTable
+  alias EctoExtractMigrations.Parsers.AlterTable
 
   test "primary_key" do
     expected = %{

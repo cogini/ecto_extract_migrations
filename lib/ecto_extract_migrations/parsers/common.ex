@@ -1,4 +1,4 @@
-defmodule EctoExtractMigrations.Common do
+defmodule EctoExtractMigrations.Parsers.Common do
   import NimbleParsec
 
   def whitespace do

@@ -1,7 +1,7 @@
-defmodule EctoExtractMigrations.CreateSchema do
+defmodule EctoExtractMigrations.Parsers.CreateSchema do
   import NimbleParsec
 
-  alias EctoExtractMigrations.Common
+  alias EctoExtractMigrations.Parsers.Common
 
   # https://www.postgresql.org/docs/current/sql-createschema.html
   # CREATE SCHEMA foo;

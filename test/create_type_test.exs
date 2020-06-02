@@ -1,7 +1,7 @@
 defmodule CreateTypeTest do
   use ExUnit.Case
 
-  alias EctoExtractMigrations.CreateType
+  alias EctoExtractMigrations.Parsers.CreateType
 
   test "create type" do
     expected = %{

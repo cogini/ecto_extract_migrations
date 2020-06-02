@@ -1,8 +1,8 @@
-defmodule EctoExtractMigrations.CreateTable do
+defmodule EctoExtractMigrations.Parsers.CreateTable do
   import NimbleParsec
 
-  require EctoExtractMigrations.Common
-  alias EctoExtractMigrations.Common
+  require EctoExtractMigrations.Parsers.Common
+  alias EctoExtractMigrations.Parsers.Common
 
   # https://www.postgresql.org/docs/current/sql-createtable.html
 

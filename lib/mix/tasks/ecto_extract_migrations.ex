@@ -58,11 +58,14 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
      # constraints
      # CREATE VIEW
 
-       # %{action: :add_constraint, constraint_name: "message_pkey", primary_key: ["id"], table: ["chat", "message"]}
-     primary_keys =
-       for {%{type: type, data: data}} <- results, type == :alter_table, data.action == :add_constraint, into: %{} do
-         {data.table, data.primary_key}
-       end
+     # %{action: :add_constraint, constraint_name: "message_pkey", primary_key: ["id"], table: ["chat", "message"]}
+     constraints = Enum.filter(results,
+       fn %{type: :alter_table, data: %{action: :add_constraint}} -> true
+         _ -> false end)
+
+    # for {key, value} <- primary_keys do
+    #   Mix.shell().info("primary_key: #{inspect key} #{inspect value}")
+    # end
 
     for {%{type: type, sql: sql, data: data, idx: idx}, index} <- Enum.with_index(results) do
       Mix.shell().info("SQL #{type} #{idx} \n#{sql}\n#{inspect data}")
@@ -135,10 +138,23 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
     %{type: type, idx: idx, sql: sql, data: data}
   end
 
-  def sql_parser(:create_table), do: &EctoExtractMigrations.CreateTable.parse/1
-  def sql_parser(:create_schema), do: &EctoExtractMigrations.CreateSchema.parse/1
-  def sql_parser(:create_type), do: &EctoExtractMigrations.CreateType.parse/1
-  def sql_parser(:alter_table), do: &EctoExtractMigrations.AlterTable.parse/1
+  def sql_parser(:create_table), do: &EctoExtractMigrations.Parsers.CreateTable.parse/1
+  def sql_parser(:create_schema), do: &EctoExtractMigrations.Parsers.CreateSchema.parse/1
+  def sql_parser(:create_type), do: &EctoExtractMigrations.Parsers.CreateType.parse/1
+  def sql_parser(:alter_table), do: &EctoExtractMigrations.Parsers.AlterTable.parse/1
 
+  # def get_constraint(%{type: :alter_table, data: %{action: :add_constraint, primary_key: pk} = data}, acc) do
+  #   Map.update(acc, table, %{primary_key: pk}, &(Map.put(&1, :primary_key, pk)))
+  # end
+  # def get_constraint(_, acc), do: acc
+
+  # def get_constraint(%{data: %{primary_key: pk} = data}, acc) do
+  #   for col <- pk, reduce: acc do
+  #     acc -> Map.update(acc, data.table, %{primary_key: pk}, &(Map.put(&1, :primary_key, pk)))
+  # end
+  # def get_constraint(%{data: %{default: default} = data}, acc) do
+  #   Map.update(acc, data.table, %{primary_key: pk}, &(Map.put(&1, :primary_key, pk)))
+  # end
+  # def get_constraint(_, acc), do: acc
 
 end
