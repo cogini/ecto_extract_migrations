@@ -45,27 +45,24 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
       sql_file
       |> File.stream!
       |> Stream.with_index
-      |> Stream.transform(nil, &collect_sql/2)
+      |> Stream.transform(nil, &extract_sql/2)
       |> Stream.map(&parse_sql/1)
       |> Enum.to_list
 
-     bindings = [
-       repo: repo,
-     ]
+    bindings = [
+      repo: repo,
+    ]
 
-     # TODO
-     # merge alter table with table
-     # constraints
-     # CREATE VIEW
+    # TODO
+    # merge alter table with table
+    # constraints
+    # CREATE VIEW
 
-     # %{action: :add_constraint, constraint_name: "message_pkey", primary_key: ["id"], table: ["chat", "message"]}
-     constraints = Enum.filter(results,
-       fn %{type: :alter_table, data: %{action: :add_constraint}} -> true
-         _ -> false end)
-
-    # for {key, value} <- primary_keys do
-    #   Mix.shell().info("primary_key: #{inspect key} #{inspect value}")
-    # end
+    primary_keys =
+      for result <- results, is_pk_constraint(result), into: %{} do
+        # Mix.shell().info("primary_key #{inspect result}")
+        {result.data.table, result.data.primary_key}
+      end
 
     for {%{type: type, sql: sql, data: data, idx: idx}, index} <- Enum.with_index(results) do
       Mix.shell().info("SQL #{type} #{idx} \n#{sql}\n#{inspect data}")
@@ -78,6 +75,16 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
             :ok
           else
             [schema, name] = data.name
+            # data =
+            #   if primary_keys[data.name] do
+            #     Mix.shell().info("table pk data #{inspect data.name} #{inspect data}")
+            #     mod = table_set_pk(data, primary_keys[data.name])
+            #     Mix.shell().info("table pk mod #{inspect data.name} #{inspect mod}")
+            #     mod
+            #   else
+            #     data
+            #   end
+            data = table_set_pk(data, primary_keys[data.name])
             {:ok, migration} = Table.create_migration(data, bindings)
             filename = Path.join(migrations_path, "#{prefix}_table_#{schema}_#{name}.exs")
             Mix.shell().info(filename)
@@ -104,7 +111,8 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
 
   end
 
-  def collect_sql({line, idx}, nil = acc) do
+  @doc "Extract SQL for statements from file"
+  def extract_sql({line, idx}, nil = acc) do
     cond do
       String.match?(line, ~r/^CREATE TABLE/i) ->
         {[], {:create_table, idx, ~r/;$/i, [line]}}
@@ -122,7 +130,7 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
         {[], acc}
     end
   end
-  def collect_sql({line, _idx}, {type, start_idx, stop, lines}) do
+  def extract_sql({line, _idx}, {type, start_idx, stop, lines}) do
     if String.match?(line, stop) do
       {[{type, start_idx, Enum.reverse([line | lines])}], nil}
     else
@@ -130,6 +138,7 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
     end
   end
 
+  @doc "Run parser matching type"
   def parse_sql({type, idx, lines}) do
     sql = Enum.join(lines)
     # Mix.shell().info("SQL #{idx}\n#{sql}")
@@ -143,18 +152,28 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
   def sql_parser(:create_type), do: &EctoExtractMigrations.Parsers.CreateType.parse/1
   def sql_parser(:alter_table), do: &EctoExtractMigrations.Parsers.AlterTable.parse/1
 
-  # def get_constraint(%{type: :alter_table, data: %{action: :add_constraint, primary_key: pk} = data}, acc) do
-  #   Map.update(acc, table, %{primary_key: pk}, &(Map.put(&1, :primary_key, pk)))
-  # end
-  # def get_constraint(_, acc), do: acc
+  # %{action: :add_constraint, constraint_name: "message_pkey", primary_key: ["id"], table: ["chat", "message"]}
+  def is_pk_constraint(%{type: :alter_table, data: %{action: :add_constraint, primary_key: _pk}}), do: true
+  def is_pk_constraint(_), do: false
 
-  # def get_constraint(%{data: %{primary_key: pk} = data}, acc) do
-  #   for col <- pk, reduce: acc do
-  #     acc -> Map.update(acc, data.table, %{primary_key: pk}, &(Map.put(&1, :primary_key, pk)))
-  # end
-  # def get_constraint(%{data: %{default: default} = data}, acc) do
-  #   Map.update(acc, data.table, %{primary_key: pk}, &(Map.put(&1, :primary_key, pk)))
-  # end
-  # def get_constraint(_, acc), do: acc
+  # Set primary_key: true on column if it is part of table primary key
+  def table_set_pk(data, nil), do: data
+  def table_set_pk(data, pk) do
+    Mix.shell().info("setting pk: #{inspect data.name} #{inspect pk}")
+    columns = data[:columns]
+    # Mix.shell().info("setting pk columns: #{inspect columns}")
+    columns = Enum.map(columns, &(column_set_pk(&1, pk)))
+    # Mix.shell().info("setting pk columns: #{inspect columns}")
+    %{data | columns: columns}
+  end
+
+  def column_set_pk(column, pk) do
+    if column.name in pk do
+      Mix.shell().info("setting pk column: #{inspect column}")
+      Map.put(column, :primary_key, true)
+    else
+      column
+    end
+  end
 
 end

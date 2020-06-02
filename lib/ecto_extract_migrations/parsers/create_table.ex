@@ -30,6 +30,7 @@ defmodule EctoExtractMigrations.Parsers.CreateTable do
 
   table_name = choice([schema_qualified_table_name, bare_table_name])
 
+
   # [ CONSTRAINT constraint_name ]
   # { CHECK ( expression ) [ NO INHERIT ] |
   #   UNIQUE ( column_name [, ... ] ) index_parameters |
@@ -135,6 +136,20 @@ defmodule EctoExtractMigrations.Parsers.CreateTable do
   #   |> string("COLLATION")
   #   |> concat(name)
 
+  # column_constraint
+  # [ CONSTRAINT constraint_name ]
+  # { NOT NULL |
+  #   NULL |
+  #   CHECK ( expression ) [ NO INHERIT ] |
+  #   DEFAULT default_expr |
+  #   GENERATED ALWAYS AS ( generation_expr ) STORED |
+  #   GENERATED { ALWAYS | BY DEFAULT } AS IDENTITY [ ( sequence_options ) ] |
+  #   UNIQUE index_parameters |
+  #   PRIMARY KEY index_parameters |
+  #   REFERENCES reftable [ ( refcolumn ) ] [ MATCH FULL | MATCH PARTIAL | MATCH SIMPLE ]
+  #     [ ON DELETE referential_action ] [ ON UPDATE referential_action ] }
+  # [ DEFERRABLE | NOT DEFERRABLE ] [ INITIALLY DEFERRED | INITIALLY IMMEDIATE ]
+
   constraint_name =
     ignore(whitespace)
     |> string("CONSTRAINT")
@@ -199,18 +214,6 @@ defmodule EctoExtractMigrations.Parsers.CreateTable do
       ])
     ]) |> unwrap_and_tag(:default)
 
-# [ CONSTRAINT constraint_name ]
-# { NOT NULL |
-#   NULL |
-#   CHECK ( expression ) [ NO INHERIT ] |
-#   DEFAULT default_expr |
-#   GENERATED ALWAYS AS ( generation_expr ) STORED |
-#   GENERATED { ALWAYS | BY DEFAULT } AS IDENTITY [ ( sequence_options ) ] |
-#   UNIQUE index_parameters |
-#   PRIMARY KEY index_parameters |
-#   REFERENCES reftable [ ( refcolumn ) ] [ MATCH FULL | MATCH PARTIAL | MATCH SIMPLE ]
-#     [ ON DELETE referential_action ] [ ON UPDATE referential_action ] }
-# [ DEFERRABLE | NOT DEFERRABLE ] [ INITIALLY DEFERRED | INITIALLY IMMEDIATE ]
 
   column_definition =
     column_name |> unwrap_and_tag(:name)
@@ -261,6 +264,8 @@ defmodule EctoExtractMigrations.Parsers.CreateTable do
         attrs = Map.merge(attrs, %{columns: columns, constraints: constraints})
         attrs = if constraints == [] do
           Map.drop(attrs, [:constraints])
+        else
+          attrs
         end
 
         {:ok, attrs}
@@ -297,6 +302,15 @@ defmodule EctoExtractMigrations.Parsers.CreateTable do
     column
     |> Map.drop([:size])
     |> Map.merge(%{precision: precision, scale: scale})
+  end
+  # def fix_column(%{type: type, is_array: true} = column) do
+  #   column
+  #   |> Map.drop([:is_array])
+  #   |> Map.merge(%{type: {:array, type}})
+  # end
+  def fix_column(%{type: :constraint, check: check} = column) do
+    check = String.replace_prefix(check, "(", "") |> String.replace_suffix(")", "")
+    Map.put(column, :check, check)
   end
   def fix_column(column), do: column
 

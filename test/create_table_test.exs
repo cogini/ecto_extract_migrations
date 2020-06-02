@@ -33,7 +33,14 @@ defmodule CreateTableTest do
   end
 
   test "table_constraint" do
-    assert [{:type, :constraint}, {:name, "case_coupon_current_uses_check"}, {:check, "((current_uses >= 0))"}] == value(CreateTable.parsec_table_constraint("CONSTRAINT case_coupon_current_uses_check CHECK ((current_uses >= 0))"))
+    expected = [{:type, :constraint}, {:name, "case_coupon_current_uses_check"}, {:check, "((current_uses >= 0))"}]
+    assert expected == value(CreateTable.parsec_table_constraint("CONSTRAINT case_coupon_current_uses_check CHECK ((current_uses >= 0))"))
+
+    expected = [{:type, :constraint}, {:name, "case_coupon_discount_percentage_check"}, {:check, "((discount_percentage >= 0))"}]
+    assert expected == value(CreateTable.parsec_table_constraint("CONSTRAINT case_coupon_discount_percentage_check CHECK ((discount_percentage >= 0))"))
+
+    expected = [{:type, :constraint}, {:name, "case_coupon_max_uses_check"}, {:check, "((max_uses >= 0))"}]
+    assert expected == value(CreateTable.parsec_table_constraint("CONSTRAINT case_coupon_max_uses_check CHECK ((max_uses >= 0))"))
   end
 
   test "parse_session" do
@@ -74,6 +81,47 @@ defmodule CreateTableTest do
         %{name: "mbi", type: :"character varying", size: 50},
         %{name: "dob", type: :"timestamp without time zone"},
         %{name: "age", type: :integer},
+      ]
+    }
+    assert {:ok, expected} == CreateTable.parse(sql)
+  end
+
+  test "create table with constraints" do
+    sql = """
+    CREATE TABLE public.case_coupon (
+        id integer NOT NULL,
+        facility_id integer NOT NULL,
+        code character varying(64) NOT NULL,
+        discount_percentage integer NOT NULL,
+        discount_amount integer NOT NULL,
+        max_uses integer NOT NULL,
+        current_uses integer NOT NULL,
+        start_date timestamp without time zone,
+        end_date timestamp without time zone,
+        CONSTRAINT case_coupon_current_uses_check CHECK ((current_uses >= 0)),
+        CONSTRAINT case_coupon_discount_percentage_check CHECK ((discount_percentage >= 0)),
+        CONSTRAINT case_coupon_discount_percentage_check1 CHECK ((discount_percentage >= 0)),
+        CONSTRAINT case_coupon_max_uses_check CHECK ((max_uses >= 0))
+    );
+    """
+    expected = %{
+      columns: [
+        %{name: "id", type: :integer, null: false},
+        %{name: "facility_id", null: false, type: :integer},
+        %{name: "code", size: 64, type: :"character varying", null: false},
+        %{name: "discount_percentage", type: :integer, null: false},
+        %{name: "discount_amount", type: :integer, null: false},
+        %{name: "max_uses", null: false, type: :integer},
+        %{name: "current_uses", null: false, type: :integer},
+        %{name: "start_date", type: :"timestamp without time zone"},
+        %{name: "end_date", type: :"timestamp without time zone"}
+      ],
+      name: ["public", "case_coupon"],
+      constraints: [
+        %{check: "(current_uses >= 0)", name: "case_coupon_current_uses_check", type: :constraint},
+        %{check: "(discount_percentage >= 0)", name: "case_coupon_discount_percentage_check", type: :constraint},
+        %{check: "(discount_percentage >= 0)", name: "case_coupon_discount_percentage_check1", type: :constraint},
+        %{check: "(max_uses >= 0)", name: "case_coupon_max_uses_check", type: :constraint}
       ]
     }
     assert {:ok, expected} == CreateTable.parse(sql)
