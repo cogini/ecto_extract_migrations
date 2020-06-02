@@ -254,7 +254,7 @@ defmodule EctoExtractMigrations.CreateTable do
   def parse(sql) do
     case parsec_create_table(sql) do
       {:ok, value, _, _, _, _} ->
-        {attrs, columns} = Enum.reduce(value, {%{}, []}, &reduce_table/2)
+        {attrs, columns} = Enum.reduce(value, {%{}, []}, &split_attrs_columns/2)
         columns = Enum.map(Enum.reverse(columns), &fix_column/1)
 
         {constraints, columns} = Enum.split_with(columns, &is_constraint/1)
@@ -262,13 +262,19 @@ defmodule EctoExtractMigrations.CreateTable do
         attrs = if constraints == [] do
           Map.drop(attrs, [:constraints])
         end
+
         {:ok, attrs}
       error -> error
     end
   end
 
+  # Whether definition is a constraint
   def is_constraint(%{type: :constraint}), do: true
   def is_constraint(_), do: false
+
+  # Separate table attributes from column definitions
+  def split_attrs_columns(value, {m, l}) when is_map(value), do: {m, [value | l]}
+  def split_attrs_columns({key, value}, {m, l}), do: {Map.put(m, key, value), l}
 
   @doc """
   Modify column attributes to better match migrations.
@@ -293,9 +299,6 @@ defmodule EctoExtractMigrations.CreateTable do
     |> Map.merge(%{precision: precision, scale: scale})
   end
   def fix_column(column), do: column
-
-  def reduce_table(value, {m, l}) when is_map(value), do: {m, [value | l]}
-  def reduce_table({key, value}, {m, l}), do: {Map.put(m, key, value), l}
 
   def parse_table_name(name), do: value(parsec_table_name(name))
 
