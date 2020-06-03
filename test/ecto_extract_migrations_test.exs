@@ -3,10 +3,10 @@ defmodule EctoExtractMigrationsTest do
 
   import EctoExtractMigrations
 
-  test "format_table_name/1" do
-    assert "mytable" == format_table_name("mytable")
-    assert "myschema.mytable" == format_table_name(["myschema", "mytable"])
-    assert "mytable" == format_table_name(["public", "mytable"])
+  test "format_module_name/1" do
+    assert "Mytable" == format_module_name("mytable")
+    assert "Myschema.Mytable" == format_module_name(["myschema", "mytable"])
+    assert "Mytable" == format_module_name(["public", "mytable"])
   end
 
 end
