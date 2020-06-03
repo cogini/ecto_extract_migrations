@@ -23,6 +23,22 @@ defmodule EctoExtractMigrations.Parsers.Common do
     choice([quoted_identifier(), identifier()])
   end
 
+  def schema_name do
+    name()
+  end
+
+  def schema_qualified_table_name() do
+    schema_name() |> ignore(ascii_char([?.])) |> concat(name())
+  end
+
+  def table_name do
+    choice([schema_qualified_table_name(), name()])
+  end
+
+  def column_name do
+    choice([quoted_identifier(), identifier()])
+  end
+
   def convert_type(value, acc) do
     [String.downcase(value) |> String.to_existing_atom() | acc]
   end
