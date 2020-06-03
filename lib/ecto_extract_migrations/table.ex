@@ -6,7 +6,7 @@ defmodule EctoExtractMigrations.Table do
     columns_data = data[:columns]
     Mix.shell().info("create_migration> #{inspect columns_data} #{inspect has_pk(columns_data)}")
 
-    table_name = EctoExtractMigrations.format_table_name(data.name)
+    table_name = format_table_name(data.name)
     table_opts = table_name <> format_pk(has_pk(columns_data))
     columns = Enum.map(columns_data, &format_column/1)
 
@@ -21,8 +21,8 @@ defmodule EctoExtractMigrations.Table do
     EctoExtractMigrations.eval_template(template_path, bindings)
   end
 
-  def format_table_name(["public", name]), do: ~s("#{name}")
-  def format_table_name([schema, name]), do: ~s("#{name}", prefix: \"#{schema}\")
+  def format_table_name(["public", name]), do: ~s|"#{name}"|
+  def format_table_name([schema, name]), do: ~s|"#{name}", prefix: "#{schema}"|
 
   def format_pk(true), do: ", primary_key: false"
   def format_pk(false), do: ""
