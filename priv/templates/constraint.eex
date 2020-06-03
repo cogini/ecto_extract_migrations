@@ -1,4 +1,4 @@
-defmodule <%= repo %>.Migrations.<%= module_name %> do
+defmodule <%= repo %>.Migrations.<%= module_name %>Constraints do
   use Ecto.Migration
 
   def change do
