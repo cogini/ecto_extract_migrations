@@ -3,11 +3,6 @@ defmodule TableTest do
 
   alias EctoExtractMigrations.Table
 
-  test "format_constraint" do
-    expected = ~s|constraint("public.foo", :current_uses_check, check: "(current_uses >= 0)")|
-    assert expected == Table.format_constraint("public.foo", %{name: "current_uses_check", check: "(current_uses >= 0)"})
-  end
-
   test "has_pk" do
     columns = [
       %{name: "id", null: false, primary_key: true, type: :integer},

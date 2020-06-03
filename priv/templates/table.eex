@@ -9,14 +9,3 @@ defmodule <%= repo %>.Migrations.<%= module_name %> do
     end
   end
 end
-<%= if not Enum.empty?(constraints) do %>
-defmodule <%= repo %>.Migrations.<%= module_name %>Constraints do
-  use Ecto.Migration
-
-  def change do
-    <%= for constraint <- constraints do %>
-    create <%= constraint %>
-    <% end %>
-  end
-end
-<% end %>
