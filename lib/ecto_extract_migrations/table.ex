@@ -3,25 +3,17 @@ defmodule EctoExtractMigrations.Table do
 
   def create_migration(data, bindings) do
     Mix.shell().info("create_migration> #{inspect data} #{inspect bindings}")
-    [schema, table] = data.name
-
     columns_data = data[:columns]
     Mix.shell().info("create_migration> #{inspect columns_data} #{inspect has_pk(columns_data)}")
-    table_opts = format_table_name(data.name) <> format_pk(has_pk(columns_data))
+
+    table_name = EctoExtractMigrations.format_table_name(data.name)
+    table_opts = table_name <> format_pk(has_pk(columns_data))
     columns = Enum.map(columns_data, &format_column/1)
 
-    schema_table = "#{schema}.#{table}"
-    constraints = Enum.map(Map.get(data, :constraints, []), &(format_constraint(&1, schema_table)))
-
-    if not Enum.empty?(constraints) do
-      Mix.shell().info("create_migration> constraints #{inspect constraints}}")
-    end
-
     bindings = Keyword.merge(bindings, [
-      module_name: "#{Macro.camelize(schema)}.#{Macro.camelize(table)}",
+      module_name: EctoExtractMigrations.format_module_name(data.name),
       table_opts: table_opts,
       columns: columns,
-      constraints: constraints
     ])
 
     template_dir = Application.app_dir(@app, ["priv", "templates"])
@@ -84,9 +76,5 @@ defmodule EctoExtractMigrations.Table do
   def format_column(key, value), do: "#{key}: #{value}"
 
   def escape(value), do: String.replace(value, "\\", "\\\\")
-
-  def format_constraint(opts, table) do
-    ~s|constraint("#{table}", :#{opts.name}, check: "#{opts.check}")|
-  end
 
 end
