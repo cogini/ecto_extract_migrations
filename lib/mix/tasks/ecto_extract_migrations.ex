@@ -19,6 +19,7 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
   alias EctoExtractMigrations.Type
   alias EctoExtractMigrations.Table
   alias EctoExtractMigrations.View
+  alias EctoExtractMigrations.Constraint
 
   use Mix.Task
 
@@ -76,21 +77,22 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
             :ok
           else
             [schema, name] = data.name
-            # data =
-            #   if primary_keys[data.name] do
-            #     Mix.shell().info("table pk data #{inspect data.name} #{inspect data}")
-            #     mod = table_set_pk(data, primary_keys[data.name])
-            #     Mix.shell().info("table pk mod #{inspect data.name} #{inspect mod}")
-            #     mod
-            #   else
-            #     data
-            #   end
             data = table_set_pk(data, primary_keys[data.name])
             {:ok, migration} = Table.create_migration(data, bindings)
             filename = Path.join(migrations_path, "#{prefix}_table_#{schema}_#{name}.exs")
             Mix.shell().info(filename)
             Mix.shell().info(migration)
             :ok = File.write(filename, migration)
+
+            constraints = data[:constraints] || []
+            if not Enum.empty?(constraints) do
+              constraint_data = %{table: data.name, constraints: constraints}
+              {:ok, migration} = Constraint.create_migration(constraint_data, bindings)
+              filename = Path.join(migrations_path, "#{prefix}_constraint_#{schema}_#{name}.exs")
+              Mix.shell().info(filename)
+              Mix.shell().info(migration)
+              :ok = File.write(filename, migration)
+            end
           end
         :create_schema ->
           {:ok, migration} = Schema.create_migration(data, bindings)
