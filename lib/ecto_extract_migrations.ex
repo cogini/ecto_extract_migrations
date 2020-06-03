@@ -16,4 +16,14 @@ defmodule EctoExtractMigrations do
       {:error, {:template, e}}
   end
 
+  def format_table_name(table) when is_binary(table), do: table
+  def format_table_name(["public", table]), do: table
+  def format_table_name([schema, table]), do: "#{schema}.#{table}"
+
+  def format_module_name(table) when is_binary(table), do: Macro.camelize(table)
+  def format_module_name(["public", table]), do: Macro.camelize(table)
+  def format_module_name([schema, table]) do
+    "#{Macro.camelize(schema)}.#{Macro.camelize(table)}"
+  end
+
 end
