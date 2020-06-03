@@ -13,12 +13,14 @@ defmodule EctoExtractMigrations.Constraint do
   end
 
   def format_constraints(data) do
-    table_name = EctoExtractMigrations.format_table_name(data.table)
-    Enum.map(Map.get(data, :constraints, []), &(format_constraint(&1, table_name)))
+    Enum.map(Map.get(data, :constraints, []), &(format_constraint(&1, data.table)))
   end
 
   def format_constraint(opts, table) do
-    ~s|constraint("#{table}", :#{opts.name}, check: "#{opts.check}")|
+    table_name = format_table_name(table)
+    ~s|constraint(#{table_name}, :#{opts.name}, check: "#{opts.check}")|
   end
 
+  def format_table_name(table) when is_binary(table), do: ~s|"#{table}"|
+  def format_table_name([schema, table]), do: ~s|"#{schema}.#{table}"|
 end
