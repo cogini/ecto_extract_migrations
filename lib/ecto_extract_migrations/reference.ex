@@ -3,8 +3,6 @@ defmodule EctoExtractMigrations.Reference do
   @doc "Convert alter table data structure into Ecto migration references() args"
   def references_args(data) do
     name = data[:constraint_name]
-    [column] = data[:references_column]
-
     opts =
       [:references_column, :references_table, :on_delete, :on_update]
       |> Enum.map(&(map_reference({&1, data[&1]})))
