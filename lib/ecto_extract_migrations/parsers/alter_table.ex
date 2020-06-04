@@ -28,23 +28,17 @@ defmodule EctoExtractMigrations.Parsers.AlterTable do
 
   table_constraint_primary_key =
     ignore(whitespace)
-    |> ignore(string("PRIMARY KEY"))
+    |> string("PRIMARY KEY") |> replace(:primary_key) |> unwrap_and_tag(:type)
     |> ignore(whitespace)
-    |> ignore(ascii_char([?(]))
-    |> times(name |> ignore(optional(ascii_char([?,]))) |> ignore(optional(whitespace)), min: 1)
-    |> ignore(ascii_char([?)]))
-    |> ignore(optional(whitespace))
-    |> tag(:primary_key)
+    |> concat(Common.column_list(:primary_key))
+    |> label("PRIMARY KEY")
 
   table_constraint_unique =
     ignore(whitespace)
-    |> ignore(string("UNIQUE"))
+    |> string("UNIQUE") |> replace(:unique) |> unwrap_and_tag(:type)
     |> ignore(whitespace)
-    |> ignore(ascii_char([?(]))
-    |> times(name |> ignore(optional(ascii_char([?,]))) |> ignore(optional(whitespace)), min: 1)
-    |> ignore(ascii_char([?)]))
-    |> ignore(optional(whitespace))
-    |> tag(:unique)
+    |> concat(Common.column_list(:unique))
+    |> label("UNIQUE")
 
   on_delete =
     ignore(whitespace)
@@ -56,6 +50,7 @@ defmodule EctoExtractMigrations.Parsers.AlterTable do
       string("SET NULL") |> replace(:set_null)
     ])
     |> unwrap_and_tag(:on_delete)
+    |> label("ON DELETE")
 
   on_update =
     ignore(whitespace)
@@ -67,10 +62,11 @@ defmodule EctoExtractMigrations.Parsers.AlterTable do
       string("SET NULL") |> replace(:set_null)
     ])
     |> unwrap_and_tag(:on_update)
+    |> label("ON UPDATE")
 
   table_constraint_foreign_key =
     ignore(whitespace)
-    |> ignore(string("FOREIGN KEY"))
+    |> string("FOREIGN KEY") |> replace(:foreign_key) |> unwrap_and_tag(:type)
     |> ignore(whitespace)
     |> concat(Common.column_list(:column))
     |> ignore(whitespace)
@@ -82,6 +78,8 @@ defmodule EctoExtractMigrations.Parsers.AlterTable do
     |> optional(on_update)
     |> optional(on_delete)
 
+  # table_constraint
+  #
   # [ CONSTRAINT constraint_name ]
   # { CHECK ( expression ) [ NO INHERIT ] |
   #   UNIQUE ( column_name [, ... ] ) index_parameters |
@@ -92,32 +90,29 @@ defmodule EctoExtractMigrations.Parsers.AlterTable do
   # [ DEFERRABLE | NOT DEFERRABLE ] [ INITIALLY DEFERRED | INITIALLY IMMEDIATE ]
 
   add_table_constraint =
-    string("ADD")
+    string("ADD CONSTRAINT") |> replace(:add_table_constraint) |> unwrap_and_tag(:action)
     |> ignore(whitespace)
-    |> string("CONSTRAINT")
-    |> ignore(whitespace)
-    |> replace(:add_constraint) |> unwrap_and_tag(:action)
     |> concat(table_constraint_name)
     |> choice([table_constraint_primary_key, table_constraint_foreign_key, table_constraint_unique])
 
   column_name = name
 
   alter_column =
-    ignore(string("ALTER"))
-    |> ignore(whitespace)
-    |> ignore(string("COLUMN"))
+    ignore(string("ALTER COLUMN"))
     |> ignore(whitespace)
     |> concat(column_name) |> unwrap_and_tag(:column)
     |> ignore(whitespace)
 
+  # ALTER TABLE ONLY chat.assignment ALTER COLUMN id SET DEFAULT nextval('chat.assignment_id_seq'::regclass);
+
+  # This assumes that the default is a sequence
   default =
     utf8_string([{:not, ?;}], min: 1)
+    |> unwrap_and_tag(:fragment)
     |> unwrap_and_tag(:default)
 
   set_default =
-    ignore(string("SET"))
-    |> ignore(whitespace)
-    |> ignore(string("DEFAULT"))
+    ignore(string("SET DEFAULT"))
     |> ignore(whitespace)
     |> replace(:set_default) |> unwrap_and_tag(:action)
     |> concat(default)
@@ -129,9 +124,7 @@ defmodule EctoExtractMigrations.Parsers.AlterTable do
     |> ignore(optional(ascii_char([?,])))
 
   alter_table =
-    ignore(string("ALTER"))
-    |> ignore(whitespace)
-    |> ignore(string("TABLE"))
+    ignore(string("ALTER TABLE"))
     |> ignore(optional(if_exists))
     |> ignore(optional(only))
     |> ignore(whitespace)
