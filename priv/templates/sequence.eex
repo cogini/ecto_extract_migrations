@@ -1,0 +1,14 @@
+defmodule <%= repo %>.Migrations.<%= module_name %> do
+  use Ecto.Migration
+
+  def up do
+    execute(
+    """
+    <%= Regex.replace(~r/^/m, sql, "    ") %>
+    """)
+  end
+
+  def down do
+    execute("drop sequence if exists <%= schema %>.<%= name %>")
+  end
+end
