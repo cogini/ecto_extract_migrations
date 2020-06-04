@@ -15,9 +15,11 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
   """
   @shortdoc "Initialize template files"
 
+  alias EctoExtractMigrations.Index
   alias EctoExtractMigrations.Schema
-  alias EctoExtractMigrations.Type
+  alias EctoExtractMigrations.Sequence
   alias EctoExtractMigrations.Table
+  alias EctoExtractMigrations.Type
   alias EctoExtractMigrations.View
   # alias EctoExtractMigrations.Constraint
 
@@ -60,6 +62,14 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
     # constraints
     # create index
     # unique constraints
+    # CREATE TABLE column options are not in order, use choice
+    # Handle column constraints
+    # Handle ALTER TABLE SET DEFAULT
+    # Handle ALTER TABLE UNIQUE CONSTRAINT
+    # Handle ALTER TABLE FOREIGN KEY CONSTRAINT
+    # Consolidate CREATE INDEX statements for performance
+    # Handle CREATE FUNCTION
+    # Handle CREATE TRIGGER
 
     primary_keys =
       for result <- results, is_pk_constraint(result), into: %{} do
@@ -72,7 +82,8 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
 
     for {%{type: type, sql: sql, data: data, idx: idx}, index} <- Enum.with_index(results) do
       Mix.shell().info("SQL #{type} #{idx} \n#{sql}\n#{inspect data}")
-      prefix = to_string(:io_lib.format('~3..0b', [index]))
+      prefix = to_string(:io_lib.format('~4..0b', [index]))
+      data = Map.put(data, :sql, sql)
       case type do
         :create_table ->
           if data.name == ["public", "schema_migrations"] do
@@ -99,32 +110,41 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
             # end
           end
         :create_schema ->
-          {:ok, migration} = Schema.create_migration(data, bindings)
-          filename = Path.join(migrations_path, "#{prefix}_schema_#{data.name}.exs")
-          Mix.shell().info(filename)
-          Mix.shell().info(migration)
-          :ok = File.write(filename, migration)
+          :ok = create_migration(Schema, data, bindings,
+            Path.join(migrations_path, "#{prefix}_schema_#{data.name}.exs"))
         :create_type ->
-          {:ok, migration} = Type.create_migration(Map.put(data, :sql, sql), bindings)
-          [schema, name] = data.name
-          filename = Path.join(migrations_path, "#{prefix}_type_#{schema}_#{name}.exs")
-          Mix.shell().info(filename)
-          Mix.shell().info(migration)
-          :ok = File.write(filename, migration)
+          name = Enum.join(data.name, "_")
+          :ok = create_migration(Type, data, bindings,
+            Path.join(migrations_path, "#{prefix}_type_#{name}.exs"))
         :create_view ->
-          {:ok, migration} = View.create_migration(Map.put(data, :sql, sql), bindings)
-          [schema, name] = data.name
-          filename = Path.join(migrations_path, "#{prefix}_view_#{schema}_#{name}.exs")
-          Mix.shell().info(filename)
-          Mix.shell().info(migration)
-          :ok = File.write(filename, migration)
+          name = Enum.join(data.name, "_")
+          :ok = create_migration(View, data, bindings,
+            Path.join(migrations_path, "#{prefix}_index_#{name}.exs"))
+
+          # {:ok, migration} = View.create_migration(Map.put(data, :sql, sql), bindings)
+          # [schema, name] = data.name
+          # filename = Path.join(migrations_path, "#{prefix}_view_#{schema}_#{name}.exs")
+          # Mix.shell().info(filename)
+          # Mix.shell().info(migration)
+          # :ok = File.write(filename, migration)
         :create_index ->
-          :ok
+          :ok = create_migration(Index, data, bindings,
+            Path.join(migrations_path, "#{prefix}_index_#{data.name}.exs"))
+        :create_sequence ->
+          :ok = create_migration(Sequence, data, bindings,
+            Path.join(migrations_path, "#{prefix}_sequence_#{data.name}.exs"))
         :alter_table ->
           :ok
       end
     end
 
+  end
+
+  def create_migration(module, data, bindings, filename) do
+    {:ok, migration} = apply(module, :create_migration, [data, bindings])
+    Mix.shell().info(filename)
+    Mix.shell().info(migration)
+    :ok = File.write(filename, migration)
   end
 
   @doc "Extract SQL for statements from file"
@@ -134,12 +154,14 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
         {[], {:create_table, idx, ~r/;$/i, [line]}}
       String.match?(line, ~r/^CREATE SCHEMA/i) ->
         {[{:create_schema, idx, [line]}], nil}
+      String.match?(line, ~r/^CREATE (UNIQUE)?\s*INDEX/i) ->
+        {[{:create_index, idx, [line]}], nil}
       String.match?(line, ~r/^CREATE TYPE/i) ->
         {[], {:create_type, idx, ~r/;$/i, [line]}}
+      String.match?(line, ~r/^CREATE (TEMP|TEMPORARY)?\s*SEQUENCE/i) ->
+        {[], {:create_sequence, idx, ~r/;$/i, [line]}}
       String.match?(line, ~r/^CREATE VIEW/i) ->
         {[], {:create_view, idx, ~r/;$/i, [line]}}
-      String.match?(line, ~r/^CREATE INDEX/i) ->
-        {[], {:create_index, idx, ~r/;$/i, [line]}}
       String.match?(line, ~r/^ALTER TABLE/i) ->
         if String.match?(line, ~r/;$/) do
           {[{:alter_table, idx, [line]}], nil}
@@ -167,12 +189,13 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
     %{type: type, idx: idx, sql: sql, data: data}
   end
 
-  def sql_parser(:create_table), do: &EctoExtractMigrations.Parsers.CreateTable.parse/1
-  def sql_parser(:create_schema), do: &EctoExtractMigrations.Parsers.CreateSchema.parse/1
-  def sql_parser(:create_type), do: &EctoExtractMigrations.Parsers.CreateType.parse/1
   def sql_parser(:alter_table), do: &EctoExtractMigrations.Parsers.AlterTable.parse/1
-  def sql_parser(:create_view), do: &EctoExtractMigrations.Parsers.CreateView.parse/1
   def sql_parser(:create_index), do: &EctoExtractMigrations.Parsers.CreateIndex.parse/1
+  def sql_parser(:create_schema), do: &EctoExtractMigrations.Parsers.CreateSchema.parse/1
+  def sql_parser(:create_sequence), do: &EctoExtractMigrations.Parsers.CreateSequence.parse/1
+  def sql_parser(:create_table), do: &EctoExtractMigrations.Parsers.CreateTable.parse/1
+  def sql_parser(:create_type), do: &EctoExtractMigrations.Parsers.CreateType.parse/1
+  def sql_parser(:create_view), do: &EctoExtractMigrations.Parsers.CreateView.parse/1
 
   # %{action: :add_constraint, constraint_name: "message_pkey", primary_key: ["id"], table: ["chat", "message"]}
   def is_pk_constraint(%{type: :alter_table, data: %{action: :add_constraint, primary_key: _pk}}), do: true
