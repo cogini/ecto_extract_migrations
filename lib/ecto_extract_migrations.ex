@@ -26,4 +26,16 @@ defmodule EctoExtractMigrations do
     "#{Macro.camelize(schema)}.#{Macro.camelize(table)}"
   end
 
+  def unwrap_result(result) do
+    case result do
+      {:ok, [acc], "", _, _line, _offset} ->
+        {:ok, acc}
+
+      {:ok, _, rest, _, _line, _offset} ->
+        {:error, "could not parse: " <> rest}
+
+      {:error, reason, _rest, _context, _line, _offset} ->
+        {:error, reason}
+    end
+  end
 end
