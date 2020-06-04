@@ -221,10 +221,7 @@ defmodule EctoExtractMigrations.Parsers.CreateTable do
     |> choice([data_type, user_defined_type])
     |> optional(string("[]") |> replace(true) |> unwrap_and_tag(:is_array))
     |> ignore(optional(constraint_name))
-    |> optional(null)
-    |> optional(default)
-    |> optional(null)
-    |> optional(primary_key)
+    |> times(choice([null, default, primary_key]), min: 0)
 
   column_spec =
     ignore(times(whitespace, min: 0))
