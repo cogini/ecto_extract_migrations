@@ -2,14 +2,14 @@ defmodule EctoExtractMigrations.Parsers.Common do
   import NimbleParsec
 
   def whitespace do
-    ascii_char([32, ?\t, ?\n]) |> times(min: 1)
+    ascii_char([32, ?\t, ?\n]) |> times(min: 1) |> label("whitespace")
   end
 
   # https://www.postgresql.org/docs/current/sql-syntax-lexical.html
 
   def identifier do
     # utf8_string([], min: 1)
-    utf8_string([?a..?z, ?A..?Z, ?0..?9, ?_], min: 1)
+    utf8_string([?a..?z, ?A..?Z, ?0..?9, ?_], min: 1) |> label("identifier")
     # utf8_string([{:not, ?.}], min: 1)
   end
 
@@ -17,10 +17,11 @@ defmodule EctoExtractMigrations.Parsers.Common do
     ignore(ascii_char([?"]))
     |> concat(utf8_string([?a..?z, ?A..?Z, ?0..?9, ?_, 32], min: 1))
     |> ignore(ascii_char([?"]))
+    |> label("quoted identifier")
   end
 
   def name do
-    choice([quoted_identifier(), identifier()])
+    choice([quoted_identifier(), identifier()]) |> label("name")
   end
 
   def schema_name do
@@ -89,5 +90,15 @@ defmodule EctoExtractMigrations.Parsers.Common do
     schema = name() |> ignore(ascii_char([?.])) |> concat(name()) |> tag(tag_name)
     choice([schema, bare])
   end
+
+  # ignore_surrounding_whitespace = fn p ->
+  #     ignore(optional(whitespace))
+  #     |> concat(p)
+  #     |> ignore(optional(whitespace))
+  # end
+  # ignore_surrounding_whitespace.()
+
+  # lparen = ascii_char([?(]) |> label("(")
+  # rparen = ascii_char([?)]) |> label(")")
 
 end
