@@ -12,6 +12,10 @@ defmodule EctoExtractMigrations.Constraint do
     EctoExtractMigrations.eval_template(template_path, bindings)
   end
 
+  def migration_filename(prefix, data) do
+    "#{prefix}_constraint_#{data.name}.exs"
+  end
+
   def format_constraints(data) do
     Enum.map(Map.get(data, :constraints, []), &(format_constraint(&1, data.table)))
   end
