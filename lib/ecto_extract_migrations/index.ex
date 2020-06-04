@@ -48,6 +48,10 @@ defmodule EctoExtractMigrations.Index do
     EctoExtractMigrations.eval_template(template_path, bindings)
   end
 
+  def migration_filename(prefix, data) do
+    "#{prefix}_index_#{data.name}.exs"
+  end
+
   def nil_value({_, nil}), do: true
   def nil_value(_), do: false
 
