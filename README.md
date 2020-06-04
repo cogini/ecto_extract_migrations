@@ -1,11 +1,28 @@
 # ecto_extract_migrations
 
-Mix task to generate Ecto migrations from SQL definitions dumped from a Postgres database.
+Mix task to generate Ecto migrations from SQL definitions dumped from a
+Postgres database.
 
-Supports `CREATE TABLE`, `CREATE SCHEMA`, `CREATE TYPE`, `ALTER TABLE` to get
-primary key and defaults.
+Supports:
+
+* `ALTER TABLE`
+* `CREATE INDEX`
+* `CREATE SCHEMA`
+* `CREATE SEQUENCE`
+* `CREATE TABLE`
+* `CREATE TYPE`
+* `CREATE VIEW`
+
+The parsers use NimbleParsec, and are based on the SQL grammar, so they are
+precise and reasonably complete. They don't support every esoteric option, just
+what we needed. Patches are welcome.
 
 ## Usage
+
+This was used to migrate a legacy database with hundreds of tables and objects.
+The fundamental approach we used is to dump the schema SQL from the existing db,
+generate migrations and build a new db. We then exported the new db schema to SQL
+and compared it with the original to see what is different.
 
 Dump database schema:
 
@@ -46,3 +63,10 @@ end
 Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
 and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
 be found at [https://hexdocs.pm/ecto_extract_migrations](https://hexdocs.pm/ecto_extract_migrations).
+
+## Resources
+
+Here are some useful resources for NimbleParsec:
+
+* https://stefan.lapers.be/posts/elixir-writing-an-expression-parser-with-nimble-parsec/
+* https://github.com/slapers/ex_sel
