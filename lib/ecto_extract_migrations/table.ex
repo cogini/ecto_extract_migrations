@@ -21,6 +21,11 @@ defmodule EctoExtractMigrations.Table do
     EctoExtractMigrations.eval_template(template_path, bindings)
   end
 
+  def migration_filename(prefix, data) do
+    [schema, table] = data.name
+    "#{prefix}_table_#{schema}_#{table}.exs"
+  end
+
   def format_table_name(["public", name]), do: ~s|"#{name}"|
   def format_table_name([schema, name]), do: ~s|"#{name}", prefix: "#{schema}"|
 

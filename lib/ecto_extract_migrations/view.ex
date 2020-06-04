@@ -18,5 +18,7 @@ defmodule EctoExtractMigrations.View do
     EctoExtractMigrations.eval_template(template_path, bindings)
   end
 
+  def migration_filename(prefix, data) do
+    "#{prefix}_view_#{data.name}.exs"
+  end
 end
-

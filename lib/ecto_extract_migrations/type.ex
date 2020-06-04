@@ -18,4 +18,8 @@ defmodule EctoExtractMigrations.Type do
     EctoExtractMigrations.eval_template(template_path, bindings)
   end
 
+  def migration_filename(prefix, data) do
+    name = Enum.join(data.name, "_")
+    "#{prefix}_type_#{name}.exs"
+  end
 end
