@@ -5,10 +5,11 @@ defmodule AlterTableTest do
 
   test "primary_key" do
     expected = %{
-      action: :add_constraint,
+      action: :add_table_constraint,
       constraint_name: "assignment_pkey",
       primary_key: ["id"],
-      table: ["chat", "assignment"]
+      table: ["chat", "assignment"],
+      type: :primary_key,
     }
     assert {:ok, expected} == AlterTable.parse("""
     ALTER TABLE ONLY chat.assignment
@@ -16,10 +17,11 @@ defmodule AlterTableTest do
     """)
 
     expected = %{
-      action: :add_constraint,
+      action: :add_table_constraint,
       constraint_name: "message_pkey",
       primary_key: ["id"],
-      table: ["chat", "message"]
+      table: ["chat", "message"],
+      type: :primary_key,
     }
     assert {:ok, expected} == AlterTable.parse("""
     ALTER TABLE ONLY chat.message
@@ -27,10 +29,11 @@ defmodule AlterTableTest do
     """)
 
     expected = %{
-      action: :add_constraint,
+      action: :add_table_constraint,
       constraint_name: "message_upload_pkey",
       primary_key: ["uuid"],
-      table: ["chat", "message_upload"]
+      table: ["chat", "message_upload"],
+      type: :primary_key,
     }
     assert {:ok, expected} == AlterTable.parse("""
     ALTER TABLE ONLY chat.message_upload
@@ -38,10 +41,11 @@ defmodule AlterTableTest do
     """)
 
     expected = %{
-      action: :add_constraint,
+      action: :add_table_constraint,
       constraint_name: "pending_chunk_pkey",
       primary_key: ["uuid", "chunk"],
-      table: ["chat", "pending_chunk"]
+      table: ["chat", "pending_chunk"],
+      type: :primary_key,
     }
     assert {:ok, expected} == AlterTable.parse("""
     ALTER TABLE ONLY chat.pending_chunk
@@ -49,10 +53,11 @@ defmodule AlterTableTest do
     """)
 
     expected = %{
-      action: :add_constraint,
+      action: :add_table_constraint,
       constraint_name: "session_token_key",
       table: ["chat", "session"],
-      unique: ["token"]
+      unique: ["token"],
+      type: :unique,
     }
     assert {:ok, expected} == AlterTable.parse("""
     ALTER TABLE ONLY chat.session                                                                                                                                                       ADD CONSTRAINT session_token_key UNIQUE (token);
@@ -64,7 +69,7 @@ defmodule AlterTableTest do
       action: :set_default,
       table: ["chat", "assignment"],
       column: "id",
-      default: "nextval('chat.assignment_id_seq'::regclass)"
+      default: {:fragment, "nextval('chat.assignment_id_seq'::regclass)"}
     }
     assert {:ok, expected} == AlterTable.parse("""
     ALTER TABLE ONLY chat.assignment ALTER COLUMN id SET DEFAULT nextval('chat.assignment_id_seq'::regclass);
@@ -73,25 +78,27 @@ defmodule AlterTableTest do
 
   test "foreign key" do
     expected = %{
-      action: :add_constraint,
+      action: :add_table_constraint,
       column: ["user_id"],
       table: ["chat", "assignment"],
       constraint_name: "assignment_care_taker_id_fkey",
       references_column: ["id"],
-      references_table: ["chat", "user"]
+      references_table: ["chat", "user"],
+      type: :foreign_key,
     }
     assert {:ok, expected} == AlterTable.parse("""
     ALTER TABLE ONLY chat.assignment                                                                                                                                                    ADD CONSTRAINT assignment_care_taker_id_fkey FOREIGN KEY (user_id) REFERENCES chat."user"(id);
     """)
 
     expected = %{
-      action: :add_constraint,
+      action: :add_table_constraint,
       column: ["facility_id"],
       constraint_name: "access_case_facility_facility_id_fkey",
       references_column: ["id"],
       references_table: ["public", "facility"],
       table: ["public", "access_case_facility"],
-      on_delete: :cascade
+      on_delete: :cascade,
+      type: :foreign_key
     }
     assert {:ok, expected} == AlterTable.parse("""
     ALTER TABLE ONLY public.access_case_facility
@@ -99,7 +106,7 @@ defmodule AlterTableTest do
     """)
 
     expected = %{
-      action: :add_constraint,
+      action: :add_table_constraint,
       column: ["cache_table_id"],
       constraint_name: "cache_table_row_cache_table_id_fkey",
       references_column: ["id"],
@@ -107,6 +114,7 @@ defmodule AlterTableTest do
       table: ["public", "cache_table_row"],
       on_update: :cascade,
       on_delete: :cascade,
+      type: :foreign_key,
     }
     assert {:ok, expected} == AlterTable.parse("""
     ALTER TABLE ONLY public.cache_table_row
@@ -114,13 +122,14 @@ defmodule AlterTableTest do
     """)
 
     expected = %{
-      action: :add_constraint,
+      action: :add_table_constraint,
       column: ["creator_id"],
       constraint_name: "report_query_creator_id_fkey",
       references_column: ["id"],
       references_table: ["public", "click_user"],
       table: ["public", "report_query"],
-      on_delete: :set_null
+      on_delete: :set_null,
+      type: :foreign_key,
     }
     assert {:ok, expected} == AlterTable.parse("""
     ALTER TABLE ONLY public.report_query
