@@ -18,6 +18,7 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
   @app :ecto_extract_migrations
 
   alias EctoExtractMigrations.Index
+  alias EctoExtractMigrations.Reference
   alias EctoExtractMigrations.Schema
   alias EctoExtractMigrations.Sequence
   alias EctoExtractMigrations.Table
@@ -120,34 +121,39 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
     end
     index = index + length(types)
 
+    # Collect ALTER TABLE statements
+    {alter_table, results} = Enum.split_with(results, &(&1.type == :alter_table))
+
     # Collect table primary_keys from ALTER TABLE statements
-    {alter_table_primary_keys, results} = Enum.split_with(results, &is_alter_table_pk_constraint/1)
+    {at_pk, alter_table} = Enum.split_with(alter_table, &is_at_pk/1)
     primary_keys =
-      for result <- alter_table_primary_keys, into: %{} do
-        {result.data.table, result.data.primary_key}
+      for %{data: data} <- at_pk, into: %{} do
+        {data.table, data.primary_key}
       end
 
     # Collect table defaults from ALTER TABLE statements
-    {alter_table_set_defaults, results} = Enum.split_with(results, &is_alter_table_set_default/1)
+    {at_defaults, alter_table} = Enum.split_with(alter_table, &is_at_default/1)
     column_defaults =
-      for result <- alter_table_set_defaults, reduce: %{} do
+      for result <- at_defaults, reduce: %{} do
         acc ->
           %{table: table, column: column, default: default} = result.data
           value = acc[table] || %{}
           Map.put(acc, table, Map.put(value, column, default))
       end
 
-    {references, results} = Enum.split_with(results,
-      &(&1.action == :add_table_constraint and &1.type == :foreign_key))
-    Mix.shell().info("references: #{inspect references}")
+    # Collect table foreegn key constraints from ALTER TABLE statements
+    {at_fk, _alter_table} = Enum.split_with(alter_table, &is_at_fk/1)
 
-    # table
-    # :name - The name of the underlying reference, which defaults to "#{table}_#{column}_fkey".
-    # :column - The foreign key column name, which defaults to :id.
-    # :prefix - The prefix for the reference. Defaults to the prefix defined by the block's table/2 struct (the "products" table in the example above), or nil.
-    # :type - The foreign key type, which defaults to :bigserial.
-    # :on_delete - What to do if the referenced entry is deleted. May be :nothing (default), :delete_all, :nilify_all, or :restrict.
-    # :on_update - What to do if the referenced entry is updated. May be :nothing (default), :update_all, :nilify_all, or :restrict.
+    foreign_keys =
+      for result <- at_fk, reduce: %{} do
+        acc ->
+          data = result.data
+          reference_args = Reference.references_args(data)
+          Mix.shell().info("foreign_key> #{inspect result}\n#{inspect reference_args}")
+          %{table: table, column: column} = data
+          value = acc[table] || %{}
+          Map.put(acc, table, Map.put(value, column, data))
+      end
 
     # Collect table constraints
     table_constraints = Enum.flat_map(results, &get_table_constraints/1)
@@ -167,7 +173,7 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
             data =
               data
               |> table_set_pk(primary_keys[data.name])
-              |> table_set_default(column_defaults[data.name])
+              # |> table_set_default(column_defaults[data.name])
 
             {:ok, migration} = Table.create_migration(data, bindings)
             filename = Path.join(migrations_path, Table.migration_filename(prefix, data))
@@ -269,9 +275,17 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
     EctoExtractMigrations.eval_template(template_path, bindings)
   end
 
-  # %{action: :add_constraint, constraint_name: "message_pkey", primary_key: ["id"], table: ["chat", "message"]}
-  def is_alter_table_pk_constraint(%{type: :alter_table, data: %{action: :add_constraint, primary_key: _pk}}), do: true
-  def is_alter_table_pk_constraint(_), do: false
+  # Match ALTER TABLE ADD CONSTRAINT PRIMARY KEY
+  def is_at_pk(%{data: %{action: :add_table_constraint, type: :primary_key}}), do: true
+  def is_at_pk(_), do: false
+
+  # Match ALTER TABLE ADD CONSTRAINT FOREIGN KEY
+  def is_at_fk(%{data: %{action: :add_table_constraint, type: :foreign_key}}), do: true
+  def is_at_fk(_), do: false
+
+  # Match ALTER TABLE ALTER COLUMN id SET DEFAULT
+  def is_at_default(%{data: %{action: :set_default}}), do: true
+  def is_at_default(_), do: false
 
   # Set primary_key: true on column if it is part of table primary key
   def table_set_pk(data, nil), do: data
@@ -294,8 +308,6 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
   end
 
 
-  def is_alter_table_set_default(%{type: :alter_table, data: %{action: :set_default}}), do: true
-  def is_alter_table_set_default(_), do: false
 
   # Set default on column based on alter table
   def table_set_default(data, nil), do: data
@@ -313,6 +325,7 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
         data
     end
   end
+
 
   def get_table_constraints(%{type: :create_table, data: %{name: name, constraints: constraints}}) do
     [%{table: name, constraints: constraints}]
