@@ -17,6 +17,7 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
 
   @app :ecto_extract_migrations
 
+  alias EctoExtractMigrations.Extension
   alias EctoExtractMigrations.Index
   alias EctoExtractMigrations.Reference
   alias EctoExtractMigrations.Schema
@@ -191,6 +192,10 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
           # {:ok, migration} = Sequence.create_migration(data, bindings)
           # filename = Path.join(migrations_path, Sequence.migration_filename(prefix, data))
           # write_migration_file(migration, filename)
+        :create_extension ->
+          {:ok, migration} = Extension.create_migration(data, bindings)
+          filename = Path.join(migrations_path, Extension.migration_filename(prefix, data))
+          write_migration_file(migration, filename)
         :alter_table ->
           :ok
       end
@@ -201,6 +206,8 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
   @doc "Extract SQL for statements from file"
   def extract_sql({line, idx}, nil = acc) do
     cond do
+      String.match?(line, ~r/^CREATE EXTENSION/i) ->
+        {[{:create_extension, idx, [line]}], nil}
       String.match?(line, ~r/^CREATE TABLE/i) ->
         {[], {:create_table, idx, ~r/;$/i, [line]}}
       String.match?(line, ~r/^CREATE SCHEMA/i) ->
@@ -241,6 +248,7 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
   end
 
   def sql_parser(:alter_table), do: &EctoExtractMigrations.Parsers.AlterTable.parse/1
+  def sql_parser(:create_extension), do: &EctoExtractMigrations.Parsers.CreateExtension.parse/1
   def sql_parser(:create_index), do: &EctoExtractMigrations.Parsers.CreateIndex.parse/1
   def sql_parser(:create_schema), do: &EctoExtractMigrations.Parsers.CreateSchema.parse/1
   def sql_parser(:create_sequence), do: &EctoExtractMigrations.Parsers.CreateSequence.parse/1
