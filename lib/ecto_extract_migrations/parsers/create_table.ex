@@ -235,8 +235,14 @@ defmodule EctoExtractMigrations.Parsers.CreateTable do
       ])
     ]) |> unwrap_and_tag(:default) |> label("default")
 
-  #   REFERENCES reftable [ ( refcolumn ) ] [ MATCH FULL | MATCH PARTIAL | MATCH SIMPLE ]
-  #     [ ON DELETE referential_action ] [ ON UPDATE referential_action ] }
+  match =
+    optional(whitespace)
+    |> choice([
+      string("MATCH FULL"),
+      string("MATCH PARTIAL"),
+      string("MATCH SIMPLE")
+    ])
+    |> label("match")
 
   on_delete =
     ignore(whitespace)
@@ -269,9 +275,8 @@ defmodule EctoExtractMigrations.Parsers.CreateTable do
     |> concat(Common.table_name(:references_table))
     |> ignore(optional(whitespace))
     |> concat(Common.column_list(:references_column))
+    |> optional(match)
     |> times(choice([on_delete, on_update]), min: 0)
-
-    #  avatar_id INTEGER REFERENCES warp_avatar(id) ON DELETE CASCADE);
 
   column_constraint_name =
     ignore(whitespace)
