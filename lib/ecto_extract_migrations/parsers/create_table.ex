@@ -249,7 +249,7 @@ defmodule EctoExtractMigrations.Parsers.CreateTable do
   defparsec :parsec_table_constraint, table_constraint
   defparsec :parsec_table_name, table_name
   defparsec :parsec_create_table, create_table
-  defparsec :parse_column, column_spec
+  defparsec :parsec_column, column_spec
 
   def parse(sql) do
     case parsec_create_table(sql) do
@@ -269,6 +269,10 @@ defmodule EctoExtractMigrations.Parsers.CreateTable do
       error -> error
     end
   end
+
+
+  def parse_column(sql), do: value(parsec_column(sql))
+  def parse_table_constraint(sql), do: value(parsec_table_constraint(sql))
 
   # Whether definition is a constraint
   def is_constraint(%{type: :constraint}), do: true
@@ -315,6 +319,7 @@ defmodule EctoExtractMigrations.Parsers.CreateTable do
 
   # Convert parsec result tuple to something simpler
   def value({:ok, value, _, _, _, _}), do: {:ok, value}
-  def value({:error, value, _, _, _, _}), do: {:error, value}
+  def value(result), do: result
+  # def value({:error, value, _, _, _, _}), do: {:error, value}
 
 end
