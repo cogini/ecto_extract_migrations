@@ -51,7 +51,9 @@ defmodule AlterTableTest do
     ALTER TABLE ONLY chat.pending_chunk
         ADD CONSTRAINT pending_chunk_pkey PRIMARY KEY (uuid, chunk);
     """)
+  end
 
+  test "unique" do
     expected = %{
       action: :add_table_constraint,
       constraint_name: "session_token_key",
@@ -60,7 +62,20 @@ defmodule AlterTableTest do
       type: :unique,
     }
     assert {:ok, expected} == AlterTable.parse("""
-    ALTER TABLE ONLY chat.session                                                                                                                                                       ADD CONSTRAINT session_token_key UNIQUE (token);
+    ALTER TABLE ONLY chat.session
+        ADD CONSTRAINT session_token_key UNIQUE (token);
+    """)
+
+    expected = %{
+      action: :add_table_constraint,
+      constraint_name: "access_case_facility_case_id_key",
+      table: ["public", "access_case_facility"],
+      type: :unique,
+      unique: ["case_id", "facility_id"]
+    }
+    assert {:ok, expected} == AlterTable.parse("""
+    ALTER TABLE ONLY public.access_case_facility
+        ADD CONSTRAINT access_case_facility_case_id_key UNIQUE (case_id, facility_id);
     """)
   end
 
@@ -72,7 +87,8 @@ defmodule AlterTableTest do
       default: {:fragment, "nextval('chat.assignment_id_seq'::regclass)"}
     }
     assert {:ok, expected} == AlterTable.parse("""
-    ALTER TABLE ONLY chat.assignment ALTER COLUMN id SET DEFAULT nextval('chat.assignment_id_seq'::regclass);
+    ALTER TABLE ONLY chat.assignment
+        ALTER COLUMN id SET DEFAULT nextval('chat.assignment_id_seq'::regclass);
     """)
   end
 
@@ -87,7 +103,8 @@ defmodule AlterTableTest do
       type: :foreign_key,
     }
     assert {:ok, expected} == AlterTable.parse("""
-    ALTER TABLE ONLY chat.assignment                                                                                                                                                    ADD CONSTRAINT assignment_care_taker_id_fkey FOREIGN KEY (user_id) REFERENCES chat."user"(id);
+    ALTER TABLE ONLY chat.assignment
+        ADD CONSTRAINT assignment_care_taker_id_fkey FOREIGN KEY (user_id) REFERENCES chat."user"(id);
     """)
 
     expected = %{
