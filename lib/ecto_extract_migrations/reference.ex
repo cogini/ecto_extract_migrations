@@ -13,9 +13,13 @@ defmodule EctoExtractMigrations.Reference do
       [:constraint_name, :references_column, :references_table, :on_delete, :on_update]
       |> Enum.map(&(map_reference({&1, data[&1]})))
       |> Enum.reject(fn {_key, value} -> value == nil end)
-      |> Enum.map(&stringify/1)
+      # |> Enum.map(&stringify/1)
+    # Enum.join([stringify(table)] ++ opts, ", ")
 
-    Enum.join([stringify(table)] ++ opts, ", ")
+    ast = quote do
+      references(unquote(table), unquote(opts))
+    end
+    Macro.to_string(ast)
   end
 
   def map_reference({:constraint_name, value}), do: {:name, value}
@@ -31,7 +35,7 @@ defmodule EctoExtractMigrations.Reference do
   def map_reference({:on_update, :set_null}), do: {:on_update, :nilify_all}
   def map_reference({:on_update, _}), do: {:on_update, nil}
 
-  def stringify({key, value}) when is_atom(value), do: ~s|#{key}: #{inspect(value)}|
-  def stringify({key, value}) when is_binary(value), do: ~s|#{key}: "#{value}"|
-  def stringify(value) when is_binary(value), do: ~s|"#{value}"|
+  # def stringify({key, value}) when is_atom(value), do: ~s|#{key}: #{inspect(value)}|
+  # def stringify({key, value}) when is_binary(value), do: ~s|#{key}: "#{value}"|
+  # def stringify(value) when is_binary(value), do: ~s|"#{value}"|
 end
