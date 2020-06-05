@@ -71,13 +71,13 @@ defmodule CreateTableTest do
   end
 
   test "table_constraint" do
-    expected = [{:type, :constraint}, {:name, "case_coupon_current_uses_check"}, {:check, "((current_uses >= 0))"}]
+    expected = [{:type, :constraint}, {:name, "case_coupon_current_uses_check"}, {:check, "(current_uses >= 0)"}]
     assert {:ok, expected} == CreateTable.parse_table_constraint("CONSTRAINT case_coupon_current_uses_check CHECK ((current_uses >= 0))")
 
-    expected = [{:type, :constraint}, {:name, "case_coupon_discount_percentage_check"}, {:check, "((discount_percentage >= 0))"}]
+    expected = [{:type, :constraint}, {:name, "case_coupon_discount_percentage_check"}, {:check, "(discount_percentage >= 0)"}]
     assert {:ok, expected} == CreateTable.parse_table_constraint("CONSTRAINT case_coupon_discount_percentage_check CHECK ((discount_percentage >= 0))")
 
-    expected = [{:type, :constraint}, {:name, "case_coupon_max_uses_check"}, {:check, "((max_uses >= 0))"}]
+    expected = [{:type, :constraint}, {:name, "case_coupon_max_uses_check"}, {:check, "(max_uses >= 0)"}]
     assert {:ok, expected} == CreateTable.parse_table_constraint("CONSTRAINT case_coupon_max_uses_check CHECK ((max_uses >= 0))")
   end
 
