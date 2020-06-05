@@ -74,9 +74,7 @@ defmodule EctoExtractMigrations.Parsers.AlterTable do
     |> ignore(whitespace)
     |> concat(Common.table_name(:references_table))
     |> concat(Common.column_list(:references_column))
-    |> optional(on_delete)
-    |> optional(on_update)
-    |> optional(on_delete)
+    |> times(choice([on_delete, on_update]), min: 0)
 
   # table_constraint
   #

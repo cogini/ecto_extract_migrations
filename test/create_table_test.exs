@@ -63,6 +63,10 @@ defmodule CreateTableTest do
     expected = [%{name: "admit_risk", size: [18, 2], type: :numeric}]
     assert {:ok, expected} == CreateTable.parse_column(input)
 
+    input = "avatar_id INTEGER REFERENCES warp_avatar(id) ON DELETE CASCADE"
+    expected = [%{name: "avatar_id", type: :integer, on_delete: :cascade, references_column: ["id"], references_table: "warp_avatar"}]
+    assert {:ok, expected} == CreateTable.parse_column(input)
+
     input = """
     customization_options text DEFAULT '{"logo": "", "email_body": "<p>Dear %(title)s %(surname)s:</p>\n\n<p>\n  Your case %(shortname)s for patient %(patient_id)s has been submitted.<br /> \n  You can view your case at <a href=\"%(case_url)s\">%(case_url)s</a>.\n</p>", "use_default_config": "false"}'::text NOT NULL",
     """
@@ -89,16 +93,17 @@ defmodule CreateTableTest do
     CREATE TABLE session (
       uid BYTEA NOT NULL PRIMARY KEY,
       isPersistent BOOLEAN NOT NULL DEFAULT FALSE,
-      touched INTEGER
+      touched INTEGER,
+      avatar_id INTEGER REFERENCES warp_avatar(id) ON DELETE CASCADE
     );
     """
-    #  avatar_id INTEGER REFERENCES warp_avatar(id) ON DELETE CASCADE);
     expected = %{
       name: "session",
       columns: [
         %{name: "uid", null: false, primary_key: true, type: :bytea},
         %{default: false, name: "isPersistent", null: false, type: :boolean},
-        %{name: "touched", type: :integer}
+        %{name: "touched", type: :integer},
+        %{name: "avatar_id", on_delete: :cascade, references_column: ["id"], references_table: "warp_avatar", type: :integer},
       ]
     }
     assert {:ok, expected} == CreateTable.parse(sql)

@@ -151,12 +151,16 @@ defmodule EctoExtractMigrations.Parsers.CreateTable do
   user_defined_type =
     choice([user_defined_type_schema_qualified, user_defined_type_bare])
 
-  # collation =
-  #   ignore(whitespace)
-  #   |> string("COLLATION")
-  #   |> concat(name)
+  collation =
+    ignore(whitespace)
+    |> ignore(string("COLLATE"))
+    |> ignore(whitespace)
+    |> concat(name)
+    |> unwrap_and_tag(:collation)
+    |> label("collation")
 
   # column_constraint
+  #
   # [ CONSTRAINT constraint_name ]
   # { NOT NULL |
   #   NULL |
@@ -170,15 +174,12 @@ defmodule EctoExtractMigrations.Parsers.CreateTable do
   #     [ ON DELETE referential_action ] [ ON UPDATE referential_action ] }
   # [ DEFERRABLE | NOT DEFERRABLE ] [ INITIALLY DEFERRED | INITIALLY IMMEDIATE ]
 
-  constraint_name =
-    ignore(whitespace)
-    |> string("CONSTRAINT")
-    |> concat(name)
-
   null =
     ignore(whitespace)
-    |> choice([string("NULL") |> replace(true),
-      string("NOT NULL") |> replace(false)])
+    |> choice([
+      string("NULL") |> replace(true),
+      string("NOT NULL") |> replace(false)
+    ])
     |> unwrap_and_tag(:null)
 
   primary_key =
@@ -234,13 +235,54 @@ defmodule EctoExtractMigrations.Parsers.CreateTable do
       ])
     ]) |> unwrap_and_tag(:default) |> label("default")
 
-  collation =
+  #   REFERENCES reftable [ ( refcolumn ) ] [ MATCH FULL | MATCH PARTIAL | MATCH SIMPLE ]
+  #     [ ON DELETE referential_action ] [ ON UPDATE referential_action ] }
+
+  on_delete =
     ignore(whitespace)
-    |> ignore(string("COLLATE"))
+    |> ignore(string("ON DELETE"))
     |> ignore(whitespace)
+    |> choice([
+      string("CASCADE") |> replace(:cascade),
+      string("RESTRICT") |> replace(:restrict),
+      string("SET NULL") |> replace(:set_null)
+    ])
+    |> unwrap_and_tag(:on_delete)
+    |> label("ON DELETE")
+
+  on_update =
+    ignore(whitespace)
+    |> ignore(string("ON UPDATE"))
+    |> ignore(whitespace)
+    |> choice([
+      string("CASCADE") |> replace(:cascade),
+      string("RESTRICT") |> replace(:restrict),
+      string("SET NULL") |> replace(:set_null)
+    ])
+    |> unwrap_and_tag(:on_update)
+    |> label("ON UPDATE")
+
+  references =
+    ignore(whitespace)
+    |> ignore(string("REFERENCES"))
+    |> ignore(whitespace)
+    |> concat(Common.table_name(:references_table))
+    |> ignore(optional(whitespace))
+    |> concat(Common.column_list(:references_column))
+    |> times(choice([on_delete, on_update]), min: 0)
+
+    #  avatar_id INTEGER REFERENCES warp_avatar(id) ON DELETE CASCADE);
+
+  column_constraint_name =
+    ignore(whitespace)
+    |> string("CONSTRAINT")
     |> concat(name)
-    |> unwrap_and_tag(:collation)
-    |> label("collation")
+    |> unwrap_and_tag(:constraint_name)
+    |> label("constraint_name")
+
+  column_constraint =
+    optional(column_constraint_name)
+    |> times(choice([null, default, primary_key, references]), min: 0)
 
   column_definition =
     column_name |> unwrap_and_tag(:name)
@@ -248,13 +290,12 @@ defmodule EctoExtractMigrations.Parsers.CreateTable do
     |> choice([data_type, user_defined_type])
     |> optional(string("[]") |> replace(true) |> unwrap_and_tag(:is_array))
     |> optional(collation)
-    |> ignore(optional(constraint_name))
-    |> times(choice([null, default, primary_key]), min: 0)
+    |> optional(column_constraint)
 
   column_spec =
     ignore(times(whitespace, min: 0))
     |> choice([table_constraint, column_definition])
-    |> ignore(optional(ascii_char([?,])))
+    |> ignore(optional(ascii_char([?,]))) |> label(",")
     |> reduce({Enum, :into, [%{}]})
 
   create_table =
@@ -270,7 +311,7 @@ defmodule EctoExtractMigrations.Parsers.CreateTable do
     |> ignore(optional(whitespace))
     |> times(column_spec, min: 0)
     |> ignore(times(whitespace, min: 0))
-    |> ignore(string(");"))
+    |> ignore(string(");")) |> label(";")
     |> ignore(optional(whitespace))
 
   defparsec :parsec_table_constraint, table_constraint

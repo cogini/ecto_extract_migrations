@@ -84,6 +84,9 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
       repo: repo,
     ]
 
+    by_type = Enum.group_by(results, &(&1.type))
+    Mix.shell().info("types: #{inspect Map.keys(by_type)}")
+
     # Create schemas
     {schemas, results} = Enum.split_with(results, fn result -> result.type == :create_schema end)
     for {%{type: type, sql: sql, data: data, idx: idx}, index} <- Enum.with_index(schemas, index) do
