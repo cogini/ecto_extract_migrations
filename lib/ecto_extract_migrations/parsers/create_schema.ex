@@ -10,9 +10,7 @@ defmodule EctoExtractMigrations.Parsers.CreateSchema do
   name = Common.name()
 
   create_schema =
-    ignore(string("CREATE"))
-    |> ignore(whitespace)
-    |> ignore(string("SCHEMA"))
+    ignore(string("CREATE SCHEMA"))
     |> ignore(whitespace)
     |> concat(name) |> unwrap_and_tag(:name)
     |> ignore(ascii_char([?;]))
