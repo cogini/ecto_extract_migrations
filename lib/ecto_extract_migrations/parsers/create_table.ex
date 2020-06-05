@@ -42,20 +42,40 @@ defmodule EctoExtractMigrations.Parsers.CreateTable do
 
   # CONSTRAINT case_coupon_current_uses_check CHECK ((current_uses >= 0))
 
-  table_constraint_type =
-    string("CONSTRAINT") |> replace(:constraint) |> unwrap_and_tag(:type)
+  lparen = ascii_char([?(]) |> label("(")
+  rparen = ascii_char([?)]) |> label(")")
 
-  table_constraint_name =
-    name |> unwrap_and_tag(:name)
+  def wrap_parens(_rest, acc, context, _line, _offset) do
+    values = Enum.map(acc, &("(" <> &1 <> ")"))
+    {values, context}
+  end
+
+  expression =
+    utf8_string([?a..?z, ?A..?Z, ?0..?9, ?_, ?=, ?>, ?<, ?\s, ?', ?-, ?:], min: 1)
+    |> post_traverse(:wrap_parens)
+    |> label("expression")
+
+  defcombinatorp(:expr,
+    ignore(lparen)
+    |> choice([parsec(:expr), expression])
+    |> ignore(rparen)
+    |> label("expr")
+  )
 
   table_constraint_check =
     ignore(string("CHECK"))
     |> ignore(whitespace)
-    |> utf8_string([?a..?z, ?A..?Z, ?0..?9, ?_, 32, ?(, ?), ?=, ?<, ?>], min: 1)
+    # |> utf8_string([?a..?z, ?A..?Z, ?0..?9, ?_, 32, ?(, ?), ?=, ?<, ?>], min: 1)
+    |> parsec(:expr)
     |> unwrap_and_tag(:check)
+    |> optional(string("NO INHERIT"))
+    |> label("CHECK")
+
+  table_constraint_name =
+    name |> unwrap_and_tag(:name) |> label("constraint_name")
 
   table_constraint =
-    table_constraint_type
+    string("CONSTRAINT") |> replace(:constraint) |> unwrap_and_tag(:type)
     |> ignore(whitespace)
     |> concat(table_constraint_name)
     |> ignore(whitespace)
@@ -212,14 +232,22 @@ defmodule EctoExtractMigrations.Parsers.CreateTable do
         string("false") |> replace(false),
         string("FALSE") |> replace(false),
       ])
-    ]) |> unwrap_and_tag(:default)
+    ]) |> unwrap_and_tag(:default) |> label("default")
 
+  collation =
+    ignore(whitespace)
+    |> ignore(string("COLLATE"))
+    |> ignore(whitespace)
+    |> concat(name)
+    |> unwrap_and_tag(:collation)
+    |> label("collation")
 
   column_definition =
     column_name |> unwrap_and_tag(:name)
     |> ignore(whitespace)
     |> choice([data_type, user_defined_type])
     |> optional(string("[]") |> replace(true) |> unwrap_and_tag(:is_array))
+    |> optional(collation)
     |> ignore(optional(constraint_name))
     |> times(choice([null, default, primary_key]), min: 0)
 
@@ -228,7 +256,6 @@ defmodule EctoExtractMigrations.Parsers.CreateTable do
     |> choice([table_constraint, column_definition])
     |> ignore(optional(ascii_char([?,])))
     |> reduce({Enum, :into, [%{}]})
-    # |> ignore(optional(collation))
 
   create_table =
     ignore(string("CREATE")) |> ignore(whitespace)
@@ -309,10 +336,6 @@ defmodule EctoExtractMigrations.Parsers.CreateTable do
   #   |> Map.drop([:is_array])
   #   |> Map.merge(%{type: {:array, type}})
   # end
-  def fix_column(%{type: :constraint, check: check} = column) do
-    check = String.replace_prefix(check, "(", "") |> String.replace_suffix(")", "")
-    Map.put(column, :check, check)
-  end
   def fix_column(column), do: column
 
   def parse_table_name(name), do: value(parsec_table_name(name))

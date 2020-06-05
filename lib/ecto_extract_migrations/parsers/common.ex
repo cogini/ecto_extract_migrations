@@ -98,7 +98,23 @@ defmodule EctoExtractMigrations.Parsers.Common do
   # end
   # ignore_surrounding_whitespace.()
 
-  # lparen = ascii_char([?(]) |> label("(")
-  # rparen = ascii_char([?)]) |> label(")")
+  lparen = ascii_char([?(]) |> label("(")
+  rparen = ascii_char([?)]) |> label(")")
 
+  expression =
+    utf8_string([?a..?z, ?A..?Z, ?0..?9, ?_, ?=, ?>, ?<, ?\s, ?', ?-, ?:], min: 1)
+    |> post_traverse(:wrap_parens)
+    |> label("expression")
+
+  defcombinatorp(:expr,
+    ignore(lparen)
+    |> choice([parsec(:expr), expression])
+    |> ignore(rparen)
+    |> label("expr")
+  )
+
+  def wrap_parens(_rest, acc, context, _line, _offset) do
+    values = Enum.map(acc, &("(" <> &1 <> ")"))
+    {values, context}
+  end
 end
