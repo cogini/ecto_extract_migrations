@@ -60,7 +60,15 @@ defmodule CreateTableTest do
     assert {:ok, expected} == CreateTable.parse_column(input)
 
     input = "admit_risk numeric(18,2)"
-    expected = [%{name: "admit_risk", size: [18, 2], type: :numeric}]
+    expected = [%{name: "admit_risk", precision: 18, scale: 2, type: :numeric}]
+    assert {:ok, expected} == CreateTable.parse_column(input)
+
+    input = "admit_risk numeric(18)"
+    expected = [%{name: "admit_risk", precision: 18, type: :numeric}]
+    assert {:ok, expected} == CreateTable.parse_column(input)
+
+    input = "admit_risk numeric"
+    expected = [%{name: "admit_risk", type: :numeric}]
     assert {:ok, expected} == CreateTable.parse_column(input)
 
     input = "avatar_id INTEGER REFERENCES warp_avatar(id) ON DELETE CASCADE"

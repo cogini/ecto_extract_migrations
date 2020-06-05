@@ -47,6 +47,7 @@ defmodule EctoExtractMigrations.Parsers.Common do
   def atom_type({name, :size}) do
     uc = String.upcase(name)
     a = String.to_atom(name)
+
     choice([string(name), string(uc)])
     |> replace(a)
     |> unwrap_and_tag(:type)
@@ -60,17 +61,37 @@ defmodule EctoExtractMigrations.Parsers.Common do
   def atom_type({name, [:precision, :scale]}) do
     uc = String.upcase(name)
     a = String.to_atom(name)
+
+    precision =
+      integer(min: 1) |> unwrap_and_tag(:precision)
+
+    scale =
+      integer(min: 1) |> unwrap_and_tag(:scale)
+
+    precision_scale =
+      ignore(ascii_char([?(]))
+      |> concat(precision)
+      |> ignore(ascii_char([?,]))
+      |> concat(scale)
+      |> ignore(ascii_char([?)]))
+
+    just_precision =
+      ignore(ascii_char([?(]))
+      |> concat(precision)
+      |> ignore(ascii_char([?)]))
+
     choice([string(name), string(uc)])
     |> replace(a)
     |> unwrap_and_tag(:type)
-    |> optional(
-        ignore(ascii_char([?(]))
-        |> integer(min: 1)
-        |> ignore(ascii_char([?,]))
-        |> integer(min: 1)
-        |> ignore(ascii_char([?)]))
-        |> tag(:size)
-      )
+    |> optional(choice([precision_scale, just_precision]))
+    # |> optional(
+    #     ignore(ascii_char([?(]))
+    #     |> integer(min: 1)
+    #     |> ignore(ascii_char([?,]))
+    #     |> integer(min: 1)
+    #     |> ignore(ascii_char([?)]))
+    #     |> tag(:size)
+    #   )
   end
   def atom_type(name) do
     uc = String.upcase(name)

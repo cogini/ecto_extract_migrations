@@ -328,7 +328,7 @@ defmodule EctoExtractMigrations.Parsers.CreateTable do
     case parsec_create_table(sql) do
       {:ok, value, _, _, _, _} ->
         {attrs, columns} = Enum.reduce(value, {%{}, []}, &split_attrs_columns/2)
-        columns = Enum.map(Enum.reverse(columns), &fix_column/1)
+        columns = Enum.reverse(columns)
 
         {constraints, columns} = Enum.split_with(columns, &is_constraint/1)
         attrs = Map.merge(attrs, %{columns: columns, constraints: constraints})
@@ -372,17 +372,6 @@ defmodule EctoExtractMigrations.Parsers.CreateTable do
     specified.
   * :scale - the scale of a numeric type. Defaults to 0.
   """
-  def fix_column(%{type: type, size: [precision, scale]} = column) when type in [:numeric, :decimal] do
-    column
-    |> Map.drop([:size])
-    |> Map.merge(%{precision: precision, scale: scale})
-  end
-  # def fix_column(%{type: type, is_array: true} = column) do
-  #   column
-  #   |> Map.drop([:is_array])
-  #   |> Map.merge(%{type: {:array, type}})
-  # end
-  def fix_column(column), do: column
 
   def parse_table_name(name), do: value(parsec_table_name(name))
 
