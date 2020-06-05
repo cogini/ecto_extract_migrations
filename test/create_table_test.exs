@@ -19,28 +19,66 @@ defmodule CreateTableTest do
   end
 
   test "column" do
-    assert [%{default: "email", name: "contact", size: 64, type: :"character varying", null: false}] == value(CreateTable.parse_column("contact character varying(64) DEFAULT 'email'::character varying NOT NULL"))
-    assert [%{default: "", name: "name", null: false, size: 128, type: :"character varying"}] == value(CreateTable.parse_column("name character varying(128) DEFAULT ''::character varying NOT NULL"))
-    assert [%{default: true, name: "is_active", null: false, type: :boolean}] == value(CreateTable.parse_column("is_active boolean DEFAULT true NOT NULL"))
-    assert [%{default: false, name: "is_student", null: false, type: :boolean}] == value(CreateTable.parse_column("is_student boolean DEFAULT false NOT NULL"))
-    assert [%{name: "PRIM CHRONIC COND", type: :"character varying", size: 50}] == value(CreateTable.parse_column(~s|"PRIM CHRONIC COND" character varying(50)|))
-    assert [%{name: "uid", null: false, primary_key: true, type: :bytea}] == value(CreateTable.parse_column("uid BYTEA NOT NULL PRIMARY KEY,"))
-    assert [%{name: "isPersistent", null: false, type: :boolean, default: false}] == value(CreateTable.parse_column("isPersistent BOOLEAN NOT NULL DEFAULT FALSE"))
-    assert [%{default: 0, name: "size", null: false, type: :integer}] == value(CreateTable.parse_column("size INTEGER NOT NULL DEFAULT 0,"))
-    assert [%{name: "member_id", null: false, size: 50, type: :"character varying"}] == value(CreateTable.parse_column("member_id character varying(50) NOT NULL"))
-    assert [%{name: "mbi", size: 50, type: :"character varying"}] == value(CreateTable.parse_column("mbi character varying(50)"))
-    assert [%{name: "admit_risk", size: [18, 2], type: :numeric}] == value(CreateTable.parse_column("admit_risk numeric(18,2)"))
+    input = "contact character varying(64) DEFAULT 'email'::character varying NOT NULL"
+    expected = [%{default: "email", name: "contact", size: 64, type: :"character varying", null: false}]
+    assert {:ok, expected} == CreateTable.parse_column(input)
+
+    input = "name character varying(128) DEFAULT ''::character varying NOT NULL"
+    expected = [%{default: "", name: "name", null: false, size: 128, type: :"character varying"}]
+    assert {:ok, expected} == CreateTable.parse_column(input)
+
+    input = "is_active boolean DEFAULT true NOT NULL"
+    expected = [%{default: true, name: "is_active", null: false, type: :boolean}]
+    assert {:ok, expected} == CreateTable.parse_column(input)
+
+    input = "is_student boolean DEFAULT false NOT NULL"
+    expected = [%{default: false, name: "is_student", null: false, type: :boolean}]
+    assert {:ok, expected} == CreateTable.parse_column(input)
+
+    input = ~s|"PRIM CHRONIC COND" character varying(50)|
+    expected = [%{name: "PRIM CHRONIC COND", type: :"character varying", size: 50}]
+    assert {:ok, expected} == CreateTable.parse_column(input)
+
+    expected = [%{name: "uid", null: false, primary_key: true, type: :bytea}]
+    input = "uid BYTEA NOT NULL PRIMARY KEY,"
+    assert {:ok, expected} == CreateTable.parse_column(input)
+
+    input = "isPersistent BOOLEAN NOT NULL DEFAULT FALSE"
+    expected = [%{name: "isPersistent", null: false, type: :boolean, default: false}]
+    assert {:ok, expected} == CreateTable.parse_column(input)
+
+    input = "size INTEGER NOT NULL DEFAULT 0,"
+    expected = [%{default: 0, name: "size", null: false, type: :integer}]
+    assert {:ok, expected} == CreateTable.parse_column(input)
+
+    input = "member_id character varying(50) NOT NULL"
+    expected = [%{name: "member_id", null: false, size: 50, type: :"character varying"}]
+    assert {:ok, expected} == CreateTable.parse_column(input)
+
+    input = "mbi character varying(50)"
+    expected = [%{name: "mbi", size: 50, type: :"character varying"}]
+    assert {:ok, expected} == CreateTable.parse_column(input)
+
+    input = "admit_risk numeric(18,2)"
+    expected = [%{name: "admit_risk", size: [18, 2], type: :numeric}]
+    assert {:ok, expected} == CreateTable.parse_column(input)
+
+    input = """
+    customization_options text DEFAULT '{"logo": "", "email_body": "<p>Dear %(title)s %(surname)s:</p>\n\n<p>\n  Your case %(shortname)s for patient %(patient_id)s has been submitted.<br /> \n  You can view your case at <a href=\"%(case_url)s\">%(case_url)s</a>.\n</p>", "use_default_config": "false"}'::text NOT NULL",
+    """
+    expected = [%{default: "{\"logo\": \"\", \"email_body\": \"<p>Dear %(title)s %(surname)s:</p>\n\n<p>\n  Your case %(shortname)s for patient %(patient_id)s has been submitted.<br /> \n  You can view your case at <a href=\"%(case_url)s\">%(case_url)s</a>.\n</p>\", \"use_default_config\": \"false\"}", name: "customization_options", null: false, type: :text}]
+    assert {:ok, expected} == CreateTable.parse_column(input)
   end
 
   test "table_constraint" do
     expected = [{:type, :constraint}, {:name, "case_coupon_current_uses_check"}, {:check, "((current_uses >= 0))"}]
-    assert expected == value(CreateTable.parsec_table_constraint("CONSTRAINT case_coupon_current_uses_check CHECK ((current_uses >= 0))"))
+    assert {:ok, expected} == CreateTable.parse_table_constraint("CONSTRAINT case_coupon_current_uses_check CHECK ((current_uses >= 0))")
 
     expected = [{:type, :constraint}, {:name, "case_coupon_discount_percentage_check"}, {:check, "((discount_percentage >= 0))"}]
-    assert expected == value(CreateTable.parsec_table_constraint("CONSTRAINT case_coupon_discount_percentage_check CHECK ((discount_percentage >= 0))"))
+    assert {:ok, expected} == CreateTable.parse_table_constraint("CONSTRAINT case_coupon_discount_percentage_check CHECK ((discount_percentage >= 0))")
 
     expected = [{:type, :constraint}, {:name, "case_coupon_max_uses_check"}, {:check, "((max_uses >= 0))"}]
-    assert expected == value(CreateTable.parsec_table_constraint("CONSTRAINT case_coupon_max_uses_check CHECK ((max_uses >= 0))"))
+    assert {:ok, expected} == CreateTable.parse_table_constraint("CONSTRAINT case_coupon_max_uses_check CHECK ((max_uses >= 0))")
   end
 
   test "parse_session" do
@@ -133,6 +171,6 @@ defmodule CreateTableTest do
     refute EctoExtractMigrations.Table.starts_with_number("fish")
   end
 
-  def value({:ok, value, "", _, _, _}), do: value
+  def value({:ok, [value], "", _, _, _}), do: value
   def value({:error, value, _, _, _, _}), do: value
 end
