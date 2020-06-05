@@ -24,7 +24,7 @@ defmodule EctoExtractMigrations.Parsers.AlterTable do
     |> string("ONLY")
 
   table_constraint_name =
-    name |> unwrap_and_tag(:constraint_name)
+    name |> unwrap_and_tag(:constraint_name) |> label("constraint_name")
 
   table_constraint_primary_key =
     ignore(whitespace)
