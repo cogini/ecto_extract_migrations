@@ -1,8 +1,13 @@
-defmodule EctoExtractMigrations.Type do
+defmodule EctoExtractMigrations.Migrations.CreateType do
 
   @app :ecto_extract_migrations
 
-  def create_migration(data, bindings) do
+  def file_name(prefix, %{name: comps}, _bindings) do
+    name = Enum.join(comps, "_")
+    "#{prefix}_type_#{name}.exs"
+  end
+
+  def migration(data, bindings) do
     Mix.shell().info("#{data[:type]} #{data[:name]}")
 
     [schema, name] = data.name
@@ -15,11 +20,7 @@ defmodule EctoExtractMigrations.Type do
 
     template_dir = Application.app_dir(@app, ["priv", "templates"])
     template_path = Path.join(template_dir, "type.eex")
-    EctoExtractMigrations.eval_template(template_path, bindings)
-  end
-
-  def migration_filename(prefix, data) do
-    name = Enum.join(data.name, "_")
-    "#{prefix}_type_#{name}.exs"
+    {:ok, migration} = EctoExtractMigrations.eval_template(template_path, bindings)
+    migration
   end
 end

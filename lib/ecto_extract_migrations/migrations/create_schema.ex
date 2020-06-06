@@ -1,8 +1,12 @@
-defmodule EctoExtractMigrations.Schema do
+defmodule EctoExtractMigrations.Migrations.CreateSchema do
 
   @app :ecto_extract_migrations
 
-  def create_migration(data, bindings) do
+  def file_name(prefix, %{name: name}, _bindings) do
+    "#{prefix}_schema_#{name}.exs"
+  end
+
+  def migration(data, bindings) do
     Mix.shell().info("#{data[:type]} #{data[:name]}")
 
     schema = data.name
@@ -13,11 +17,7 @@ defmodule EctoExtractMigrations.Schema do
 
     template_dir = Application.app_dir(@app, ["priv", "templates"])
     template_path = Path.join(template_dir, "schema.eex")
-    EctoExtractMigrations.eval_template(template_path, bindings)
+    {:ok, migration} = EctoExtractMigrations.eval_template(template_path, bindings)
+    migration
   end
-
-  def migration_filename(prefix, data) do
-    "#{prefix}_schema_#{data.name}.exs"
-  end
-
 end

@@ -1,7 +1,11 @@
-defmodule EctoExtractMigrations.Index do
+defmodule EctoExtractMigrations.Migrations.CreateIndex do
   @app :ecto_extract_migrations
 
-  def create_migration(data, bindings) do
+  def file_name(prefix, %{name: name}, _bindings) do
+    "#{prefix}_index_#{name}.exs"
+  end
+
+  def migration(data, bindings) do
     [schema, table] = data.table_name
 
     table_name = ~s|"#{table}"|
@@ -13,7 +17,7 @@ defmodule EctoExtractMigrations.Index do
         schema
       end
 
-    opts = [ 
+    opts = [
       name: data[:name],
       unique: data[:unique],
       concurrently: data[:concurrently],
@@ -22,7 +26,7 @@ defmodule EctoExtractMigrations.Index do
       where: data[:where],
       include: data[:include],
     ]
-    
+
    opts = opts
       |> Enum.reject(&nil_value/1)
       |> Enum.map(&format_opt/1)
@@ -45,11 +49,8 @@ defmodule EctoExtractMigrations.Index do
 
     template_dir = Application.app_dir(@app, ["priv", "templates"])
     template_path = Path.join(template_dir, "index.eex")
-    EctoExtractMigrations.eval_template(template_path, bindings)
-  end
-
-  def migration_filename(prefix, data) do
-    "#{prefix}_index_#{data.name}.exs"
+    {:ok, migration} = EctoExtractMigrations.eval_template(template_path, bindings)
+    migration
   end
 
   def nil_value({_, nil}), do: true

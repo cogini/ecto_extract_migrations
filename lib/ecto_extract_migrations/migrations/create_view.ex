@@ -1,8 +1,12 @@
-defmodule EctoExtractMigrations.View do
+defmodule EctoExtractMigrations.Migrations.CreateView do
 
   @app :ecto_extract_migrations
 
-  def create_migration(data, bindings) do
+  def file_name(prefix, %{name: name}, _bindings) do
+    "#{prefix}_view_#{name}.exs"
+  end
+
+  def migration(data, bindings) do
     Mix.shell().info("view #{data[:name]}")
 
     [schema, name] = data.name
@@ -15,10 +19,7 @@ defmodule EctoExtractMigrations.View do
 
     template_dir = Application.app_dir(@app, ["priv", "templates"])
     template_path = Path.join(template_dir, "view.eex")
-    EctoExtractMigrations.eval_template(template_path, bindings)
-  end
-
-  def migration_filename(prefix, data) do
-    "#{prefix}_view_#{data.name}.exs"
+    {:ok, migration} = EctoExtractMigrations.eval_template(template_path, bindings)
+    migration
   end
 end

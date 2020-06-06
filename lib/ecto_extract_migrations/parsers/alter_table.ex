@@ -37,7 +37,7 @@ defmodule EctoExtractMigrations.Parsers.AlterTable do
     ignore(whitespace)
     |> string("UNIQUE") |> replace(:unique) |> unwrap_and_tag(:type)
     |> ignore(whitespace)
-    |> concat(Common.column_list(:unique))
+    |> concat(Common.column_list(:columns))
     |> label("UNIQUE")
 
   on_delete =
@@ -68,12 +68,12 @@ defmodule EctoExtractMigrations.Parsers.AlterTable do
     ignore(whitespace)
     |> string("FOREIGN KEY") |> replace(:foreign_key) |> unwrap_and_tag(:type)
     |> ignore(whitespace)
-    |> concat(Common.column_list(:column))
+    |> concat(Common.column_list(:columns))
     |> ignore(whitespace)
     |> ignore(string("REFERENCES"))
     |> ignore(whitespace)
     |> concat(Common.table_name(:references_table))
-    |> concat(Common.column_list(:references_column))
+    |> concat(Common.column_list(:references_columns))
     |> times(choice([on_delete, on_update]), min: 0)
 
   # table_constraint

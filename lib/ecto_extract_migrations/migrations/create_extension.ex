@@ -1,8 +1,12 @@
-defmodule EctoExtractMigrations.Extension do
+defmodule EctoExtractMigrations.Migrations.CreateExtension do
 
   @app :ecto_extract_migrations
 
-  def create_migration(data, bindings) do
+  def file_name(prefix, %{schema: schema, name: name}, _bindings) do
+    "#{prefix}_extension_#{schema}_#{name}.exs"
+  end
+
+  def migration(data, bindings) do
     Mix.shell().info("#{inspect data}")
 
     name = data.name
@@ -17,13 +21,8 @@ defmodule EctoExtractMigrations.Extension do
 
     template_dir = Application.app_dir(@app, ["priv", "templates"])
     template_path = Path.join(template_dir, "extension.eex")
-    EctoExtractMigrations.eval_template(template_path, bindings)
-  end
-
-  def migration_filename(prefix, data) do
-    name = data.name
-    schema = data.schema
-    "#{prefix}_extension_#{schema}_#{name}.exs"
+    {:ok, migration} = EctoExtractMigrations.eval_template(template_path, bindings)
+    migration
   end
 
 end

@@ -58,7 +58,7 @@ defmodule AlterTableTest do
       action: :add_table_constraint,
       constraint_name: "session_token_key",
       table: ["chat", "session"],
-      unique: ["token"],
+      columns: ["token"],
       type: :unique,
     }
     assert {:ok, expected} == AlterTable.parse("""
@@ -71,7 +71,7 @@ defmodule AlterTableTest do
       constraint_name: "access_case_facility_case_id_key",
       table: ["public", "access_case_facility"],
       type: :unique,
-      unique: ["case_id", "facility_id"]
+      columns: ["case_id", "facility_id"]
     }
     assert {:ok, expected} == AlterTable.parse("""
     ALTER TABLE ONLY public.access_case_facility
@@ -95,10 +95,10 @@ defmodule AlterTableTest do
   test "foreign key" do
     expected = %{
       action: :add_table_constraint,
-      column: ["user_id"],
+      columns: ["user_id"],
       table: ["chat", "assignment"],
       constraint_name: "assignment_care_taker_id_fkey",
-      references_column: ["id"],
+      references_columns: ["id"],
       references_table: ["chat", "user"],
       type: :foreign_key,
     }
@@ -109,9 +109,9 @@ defmodule AlterTableTest do
 
     expected = %{
       action: :add_table_constraint,
-      column: ["facility_id"],
+      columns: ["facility_id"],
       constraint_name: "access_case_facility_facility_id_fkey",
-      references_column: ["id"],
+      references_columns: ["id"],
       references_table: ["public", "facility"],
       table: ["public", "access_case_facility"],
       on_delete: :cascade,
@@ -124,9 +124,9 @@ defmodule AlterTableTest do
 
     expected = %{
       action: :add_table_constraint,
-      column: ["cache_table_id"],
+      columns: ["cache_table_id"],
       constraint_name: "cache_table_row_cache_table_id_fkey",
-      references_column: ["id"],
+      references_columns: ["id"],
       references_table: ["public", "cache_table"],
       table: ["public", "cache_table_row"],
       on_update: :cascade,
@@ -140,9 +140,9 @@ defmodule AlterTableTest do
 
     expected = %{
       action: :add_table_constraint,
-      column: ["creator_id"],
+      columns: ["creator_id"],
       constraint_name: "report_query_creator_id_fkey",
-      references_column: ["id"],
+      references_columns: ["id"],
       references_table: ["public", "click_user"],
       table: ["public", "report_query"],
       on_delete: :set_null,

@@ -1,4 +1,4 @@
-defmodule EctoExtractMigrations.Sequence do
+defmodule EctoExtractMigrations.Migrations.CreateSequence do
   require EEx
 
   @app :ecto_extract_migrations
@@ -9,7 +9,11 @@ defmodule EctoExtractMigrations.Sequence do
       \"\"\", "drop sequence if exists <%= schema %>.<%= name %>")
   """
 
-  def create_migration(data, bindings) do
+  def file_name(prefix, %{name: name}, _bindings) do
+    "#{prefix}_sequence_#{name}.exs"
+  end
+
+  def migration(data, bindings) do
     Mix.shell().info("sequence #{data[:name]}")
 
     [schema, name] = data.name
@@ -25,10 +29,5 @@ defmodule EctoExtractMigrations.Sequence do
     EctoExtractMigrations.eval_template(template_path, bindings)
   end
 
-  def migration_filename(prefix, data) do
-    "#{prefix}_sequence_#{data.name}.exs"
-  end
-
   EEx.function_from_string(:def, :create_migration_statement, @migration_statement, [:sql, :schema, :name])
-
 end
