@@ -25,4 +25,6 @@ defmodule EctoExtractMigrations.Parsers.CreateSchema do
       error -> error
     end
   end
+
+  def match(line), do: parse(line)
 end

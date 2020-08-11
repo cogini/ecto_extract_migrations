@@ -319,6 +319,15 @@ defmodule EctoExtractMigrations.Parsers.CreateTable do
     |> ignore(string(");")) |> label(";")
     |> ignore(optional(whitespace))
 
+  match_create_table =
+    ignore(string("CREATE")) |> ignore(whitespace)
+    |> ignore(optional(global))
+    |> ignore(optional(temporary))
+    |> ignore(optional(unlogged))
+    |> ignore(string("TABLE"))
+
+  defparsec :parsec_match, match_create_table
+
   defparsec :parsec_table_constraint, table_constraint
   defparsec :parsec_table_name, table_name
   defparsec :parsec_create_table, create_table
@@ -343,6 +352,17 @@ defmodule EctoExtractMigrations.Parsers.CreateTable do
     end
   end
 
+  def match(sql) do
+    case parse(sql) do
+      {:ok, value} ->
+        {:ok, value}
+      _ ->
+        case parsec_match(sql) do
+          {:ok, _, _, _, _, _} -> :start
+          error -> error
+        end
+    end
+  end
 
   def parse_column(sql), do: value(parsec_column(sql))
   def parse_table_constraint(sql), do: value(parsec_table_constraint(sql))

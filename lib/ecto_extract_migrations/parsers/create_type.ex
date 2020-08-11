@@ -48,12 +48,28 @@ defmodule EctoExtractMigrations.Parsers.CreateType do
     |> ignore(optional(whitespace))
     |> reduce({Enum, :into, [%{}]})
 
+  match_create_type =
+    ignore(string("CREATE TYPE"))
+
   defparsec :parsec_create_type, create_type
+  defparsec :parsec_match, match_create_type
 
   def parse(sql) do
     case parsec_create_type(sql) do
       {:ok, [value], _, _, _, _} -> {:ok, value}
       error -> error
+    end
+  end
+
+  def match(sql) do
+    case parse(sql) do
+      {:ok, value} ->
+        {:ok, value}
+      _ ->
+        case parsec_match(sql) do
+          {:ok, _, _, _, _, _} -> :start
+          error -> error
+        end
     end
   end
 

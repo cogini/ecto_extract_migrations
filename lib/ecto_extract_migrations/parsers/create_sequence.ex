@@ -113,12 +113,31 @@ defmodule EctoExtractMigrations.Parsers.CreateSequence do
     |> ignore(optional(whitespace))
     |> reduce({Enum, :into, [%{}]})
 
+  match_create_sequence =
+    ignore(string("CREATE"))
+    |> optional(temporary)
+    |> ignore(whitespace)
+    |> ignore(string("SEQUENCE"))
+
   defparsec :parsec_create_sequence, create_sequence
+  defparsec :parsec_match, match_create_sequence
 
   def parse(sql) do
     case parsec_create_sequence(sql) do
       {:ok, [value], _, _, _, _} -> {:ok, value}
       error -> error
+    end
+  end
+
+  def match(sql) do
+    case parse(sql) do
+      {:ok, value} ->
+        {:ok, value}
+      _ ->
+        case parsec_match(sql) do
+          {:ok, _, _, _, _, _} -> :start
+          error -> error
+        end
     end
   end
 
