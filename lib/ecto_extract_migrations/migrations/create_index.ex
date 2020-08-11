@@ -10,25 +10,18 @@ defmodule EctoExtractMigrations.Migrations.CreateIndex do
 
     table_name = ~s|"#{table}"|
 
-    prefix =
-      if schema == "public" do
-        nil
-      else
-        schema
-      end
-
     opts = [
       name: data[:name],
       unique: data[:unique],
       concurrently: data[:concurrently],
       using: data[:using],
-      prefix: prefix,
+      prefix: table_opt_prefix(data),
       where: data[:where],
       include: data[:include],
     ]
 
    opts = opts
-      |> Enum.reject(&nil_value/1)
+      |> Enum.reject(fn {_key, value} -> value == nil end)
       |> Enum.map(&format_opt/1)
       |> Enum.join(", ")
 
@@ -43,7 +36,7 @@ defmodule EctoExtractMigrations.Migrations.CreateIndex do
     # :include - specify fields for a covering index. This is not supported by all databases. For more information on PostgreSQL support, please read the official docs.
 
     bindings = Keyword.merge(bindings, [
-      module_name: EctoExtractMigrations.format_module_name(data.name),
+      module_name: module_name(data, bindings),
       index_args: index_args,
     ])
 
@@ -53,8 +46,16 @@ defmodule EctoExtractMigrations.Migrations.CreateIndex do
     migration
   end
 
-  def nil_value({_, nil}), do: true
-  def nil_value(_), do: false
+  @doc "Set prefix opt if schema is not public"
+  def table_opt_prefix(%{name: value}) when is_binary(value), do: nil
+  def table_opt_prefix(%{name: ["public", _table]}), do: nil
+  def table_opt_prefix(%{name: [schema, _table]}), do: schema
+
+  def module_name(%{name: name}, bindings) do
+    [bindings[:repo], "migrations", "create_index"] ++ [name]
+    |> Enum.map(&Macro.camelize/1)
+    |> Module.concat()
+  end
 
   def format_opt({key, value}) when is_binary(value) do
     value = escape(value)
