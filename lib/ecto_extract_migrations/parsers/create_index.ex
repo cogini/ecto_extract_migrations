@@ -197,4 +197,5 @@ defmodule EctoExtractMigrations.Parsers.CreateIndex do
     end
   end
 
+  def match(line), do: parse(line)
 end

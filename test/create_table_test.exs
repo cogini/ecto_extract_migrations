@@ -3,6 +3,11 @@ defmodule CreateTableTest do
 
   alias EctoExtractMigrations.Parsers.CreateTable
 
+  test "match" do
+    assert {:ok, %{columns: [], name: "device"}} == CreateTable.match("CREATE TABLE device ();")
+    assert :start == CreateTable.match("CREATE TABLE device")
+  end
+
   test "parse_table_name" do
     assert {:ok, [{:name, "foo"}]} == CreateTable.parse_table_name("foo")
     assert {:ok, [{:name, "foo"}]} == CreateTable.parse_table_name("\"foo\"")
