@@ -1,6 +1,7 @@
 defmodule EctoExtractMigrations do
   @moduledoc """
-  Documentation for `EctoExtractMigrations`.
+  The main entry point is lib/mix/tasks/ecto_extract_migrations.ex
+  This module mainly has common library functions.
   """
 
   defmodule ParseError do
@@ -16,12 +17,16 @@ defmodule EctoExtractMigrations do
       {:error, {:template, e}}
   end
 
+  @doc "Convert SQL name to Elixir module name"
+  @spec format_module_name(binary | list(binary)) :: atom
   def format_module_name(table) when is_binary(table), do: Macro.camelize(table)
   def format_module_name(["public", table]), do: Macro.camelize(table)
   def format_module_name([schema, table]) do
     "#{Macro.camelize(schema)}.#{Macro.camelize(table)}"
   end
 
+  @doc "Make result of calling NimbleParsec parser easier to deal with"
+  @spec unwrap_result(tuple) :: {:ok, term} | {:error, term}
   def unwrap_result(result) do
     case result do
       {:ok, [acc], "", _, _line, _offset} ->
