@@ -59,9 +59,6 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
       |> Stream.with_index
       |> Stream.transform(nil, &parse/2)
       |> Stream.reject(&(&1.type in [:whitespace, :comment]))
-      # |> Stream.map(&parse_sql/1)
-      # |> Stream.transform(nil, &extract_sql/2)
-      # |> Stream.map(&parse_sql/1)
       |> Enum.to_list
 
     for result <- results do
@@ -261,64 +258,6 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
         module_parse(rest, acc)
     end
   end
-
-
-  @doc "Extract SQL for statements from file"
-  def extract_sql({line, idx}, nil = acc) do
-    cond do
-      String.match?(line, ~r/^CREATE EXTENSION/i) ->
-        {[{:create_extension, idx, [line]}], nil}
-      String.match?(line, ~r/^CREATE TABLE/i) ->
-        {[], {:create_table, idx, ~r/;$/i, [line]}}
-      String.match?(line, ~r/^CREATE SCHEMA/i) ->
-        {[{:create_schema, idx, [line]}], nil}
-      String.match?(line, ~r/^CREATE (UNIQUE)?\s*INDEX/i) ->
-        {[{:create_index, idx, [line]}], nil}
-      String.match?(line, ~r/^CREATE TRIGGER/i) ->
-        {[{:create_trigger, idx, [line]}], nil}
-      String.match?(line, ~r/^CREATE TYPE/i) ->
-        {[], {:create_type, idx, ~r/;$/i, [line]}}
-      String.match?(line, ~r/^CREATE (TEMP|TEMPORARY)?\s*SEQUENCE/i) ->
-        {[], {:create_sequence, idx, ~r/;$/i, [line]}}
-      String.match?(line, ~r/^CREATE VIEW/i) ->
-        {[], {:create_view, idx, ~r/;$/i, [line]}}
-      String.match?(line, ~r/^ALTER TABLE/i) ->
-        if String.match?(line, ~r/;$/) do
-          {[{:alter_table, idx, [line]}], nil}
-        else
-          {[], {:alter_table, idx, ~r/;$/i, [line]}}
-        end
-      true ->
-        {[], acc}
-    end
-  end
-  def extract_sql({line, _idx}, {type, start_idx, stop, lines}) do
-    if String.match?(line, stop) do
-      {[{type, start_idx, Enum.reverse([line | lines])}], nil}
-    else
-      {[], {type, start_idx, stop, [line | lines]}}
-    end
-  end
-
-  @doc "Run parser matching type"
-  def parse_sql({type, idx, lines}) do
-    sql = Enum.join(lines)
-    # Mix.shell().info("SQL #{idx}\n#{sql}")
-
-    {:ok, data} = apply(sql_parser(type), [sql])
-    %{type: type, idx: idx, sql: sql, data: data}
-  end
-
-  def sql_parser(:alter_table), do: &EctoExtractMigrations.Parsers.AlterTable.parse/1
-  def sql_parser(:create_extension), do: &EctoExtractMigrations.Parsers.CreateExtension.parse/1
-  def sql_parser(:create_index), do: &EctoExtractMigrations.Parsers.CreateIndex.parse/1
-  def sql_parser(:create_schema), do: &EctoExtractMigrations.Parsers.CreateSchema.parse/1
-  def sql_parser(:create_sequence), do: &EctoExtractMigrations.Parsers.CreateSequence.parse/1
-  def sql_parser(:create_table), do: &EctoExtractMigrations.Parsers.CreateTable.parse/1
-  def sql_parser(:create_trigger), do: &EctoExtractMigrations.Parsers.CreateTrigger.parse/1
-  def sql_parser(:create_type), do: &EctoExtractMigrations.Parsers.CreateType.parse/1
-  def sql_parser(:create_view), do: &EctoExtractMigrations.Parsers.CreateView.parse/1
-
 
   def migration_module(:create_extension), do: EctoExtractMigrations.Migrations.CreateExtension
   def migration_module(:create_index), do: EctoExtractMigrations.Migrations.CreateIndex
