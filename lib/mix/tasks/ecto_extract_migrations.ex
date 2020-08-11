@@ -1,23 +1,37 @@
 defmodule Mix.Tasks.Ecto.Extract.Migrations do
   @moduledoc """
-  Create Ecto migration files from database schema.
+  Mix task to create Ecto migration files from database schema.
 
   ## Command line options
 
     * `--migrations-path` - target dir for migrations, defaults to "priv/repo/migrations".
     * `--sql-file` - target dir for migrations, defaults to "priv/repo/migrations".
-    * `--repo` - Name of repo
+    * `--repo` - Name of Ecto repo
 
   ## Usage
 
-      # Copy default templates into your project
-      mix systemd.init
+      mix ecto.extract.migrations --repo Foo
   """
-  @shortdoc "Initialize template files"
+  @shortdoc "Create Ecto migration files from db schema SQL file"
 
   @app :ecto_extract_migrations
 
-  alias EctoExtractMigrations.Reference
+  # alias EctoExtractMigrations.Reference
+
+  @parsers [
+    EctoExtractMigrations.Parsers.Whitespace,
+    EctoExtractMigrations.Parsers.Comment,
+    EctoExtractMigrations.Parsers.CreateExtension,
+    EctoExtractMigrations.Parsers.CreateSchema,
+    EctoExtractMigrations.Parsers.CreateIndex,
+    EctoExtractMigrations.Parsers.CreateTrigger,
+
+    EctoExtractMigrations.Parsers.AlterTable,
+    EctoExtractMigrations.Parsers.CreateTable,
+    EctoExtractMigrations.Parsers.CreateSequence,
+    EctoExtractMigrations.Parsers.CreateType,
+    EctoExtractMigrations.Parsers.CreateView,
+  ]
 
   use Mix.Task
 
@@ -43,9 +57,16 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
       sql_file
       |> File.stream!
       |> Stream.with_index
-      |> Stream.transform(nil, &extract_sql/2)
-      |> Stream.map(&parse_sql/1)
+      |> Stream.transform(nil, &parse/2)
+      |> Stream.reject(&(&1.type in [:whitespace, :comment]))
+      # |> Stream.map(&parse_sql/1)
+      # |> Stream.transform(nil, &extract_sql/2)
+      # |> Stream.map(&parse_sql/1)
       |> Enum.to_list
+
+    for result <- results do
+      Mix.shell().info("#{inspect result}")
+    end
 
     # TODO
     # CREATE TABLE
@@ -66,9 +87,6 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
     #
     # CREATE FUNCTION
     # CREATE TRIGGER
-    # CREATE EXTENSION
-    #   CREATE EXTENSION IF NOT EXISTS pg_stat_statements WITH SCHEMA public;
-    #   COMMENT ON EXTENSION pg_stat_statements IS 'track execution statistics of all SQL statements executed';
 
     index = 1
 
@@ -99,9 +117,7 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
       end
 
     # Create sequences
-    # {sequences, results} = Enum.split_with(results, &(&1.type == :create_sequence))
-    sequences = by_type[:create_sequence]
-    statements = for %{data: data, sql: sql} <- sequences do
+    statements = for %{data: data, sql: sql} <- by_type[:create_sequence] do
       [schema, name] = data.name
       EctoExtractMigrations.Migrations.CreateSequence.create_migration_statement(sql, schema, name)
     end
@@ -131,17 +147,17 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
 
     # Collect table foreegn key constraints from ALTER TABLE statements
 
-    foreign_keys =
-      for result <- at_objects[:foreign_key], reduce: %{} do
-        acc ->
-          data = result.data
-          column_reference = Reference.column_reference(data)
-          Mix.shell().info("foreign_key> #{inspect result}\n#{inspect column_reference}")
-          %{table: table, columns: columns} = data
-          value = acc[table] || %{}
-          column = List.first(columns)
-          Map.put(acc, table, Map.put(value, column, data))
-      end
+    # foreign_keys =
+    #   for result <- at_objects[:foreign_key], reduce: %{} do
+    #     acc ->
+    #       data = result.data
+    #       column_reference = Reference.column_reference(data)
+    #       Mix.shell().info("foreign_key> #{inspect result}\n#{inspect column_reference}")
+    #       %{table: table, columns: columns} = data
+    #       value = acc[table] || %{}
+    #       column = List.first(columns)
+    #       Map.put(acc, table, Map.put(value, column, data))
+    #   end
 
     # Collect table constraints
     table_constraints = Enum.flat_map(results, &get_table_constraints/1)
@@ -175,6 +191,7 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
     index = index + length(objects)
 
 
+    # object_types = [:create_view, :create_trigger, :create_index]
     object_types = [:create_view, :create_index]
     index =
       for object_type <- object_types, reduce: index do
@@ -196,7 +213,7 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
 
     # object_types = [:default, :foreign_key, :unique]
     object_types = [:foreign_key, :unique]
-    index =
+    #index =
       for object_type <- object_types, reduce: index do
         acc ->
           objects = at_objects[object_type]
@@ -215,6 +232,37 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
       end
   end
 
+  def parse({line, idx}, nil) do
+    module_parse(@parsers, {line, idx})
+  end
+  def parse({line, idx}, {module, lines}) do
+    lines = lines <> line
+    case apply(module, :parse, [lines]) do
+      {:ok, value} ->
+        {[%{type: type(module), idx: idx, sql: lines, data: value}], nil}
+      _ ->
+        # Mix.shell().info("#{idx}> :rest #{String.trim_trailing(line)}")
+        {[], {module, lines}}
+    end
+  end
+
+  def module_parse([], {line, idx}) do
+    Mix.shell().info("#{idx}> #{String.trim_trailing(line)}")
+    {[], nil}
+  end
+  def module_parse([module | rest], {line, idx} = acc) do
+    case apply(module, :match, [line]) do
+      :start ->
+        # Mix.shell().info("#{idx}> :start #{String.trim_trailing(line)}")
+        {[], {module, line}}
+      {:ok, value} ->
+        {[%{type: type(module), idx: idx, sql: line, data: value}], nil}
+      _ ->
+        module_parse(rest, acc)
+    end
+  end
+
+
   @doc "Extract SQL for statements from file"
   def extract_sql({line, idx}, nil = acc) do
     cond do
@@ -226,6 +274,8 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
         {[{:create_schema, idx, [line]}], nil}
       String.match?(line, ~r/^CREATE (UNIQUE)?\s*INDEX/i) ->
         {[{:create_index, idx, [line]}], nil}
+      String.match?(line, ~r/^CREATE TRIGGER/i) ->
+        {[{:create_trigger, idx, [line]}], nil}
       String.match?(line, ~r/^CREATE TYPE/i) ->
         {[], {:create_type, idx, ~r/;$/i, [line]}}
       String.match?(line, ~r/^CREATE (TEMP|TEMPORARY)?\s*SEQUENCE/i) ->
@@ -265,6 +315,7 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
   def sql_parser(:create_schema), do: &EctoExtractMigrations.Parsers.CreateSchema.parse/1
   def sql_parser(:create_sequence), do: &EctoExtractMigrations.Parsers.CreateSequence.parse/1
   def sql_parser(:create_table), do: &EctoExtractMigrations.Parsers.CreateTable.parse/1
+  def sql_parser(:create_trigger), do: &EctoExtractMigrations.Parsers.CreateTrigger.parse/1
   def sql_parser(:create_type), do: &EctoExtractMigrations.Parsers.CreateType.parse/1
   def sql_parser(:create_view), do: &EctoExtractMigrations.Parsers.CreateView.parse/1
 
@@ -273,13 +324,26 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
   def migration_module(:create_index), do: EctoExtractMigrations.Migrations.CreateIndex
   def migration_module(:create_schema), do: EctoExtractMigrations.Migrations.CreateSchema
   def migration_module(:create_table), do: EctoExtractMigrations.Migrations.CreateTable
+  def migration_module(:create_trigger), do: EctoExtractMigrations.Migrations.CreateTrigger
   def migration_module(:create_type), do: EctoExtractMigrations.Migrations.CreateType
   def migration_module(:create_view), do: EctoExtractMigrations.Migrations.CreateView
   def migration_module(:default), do: EctoExtractMigrations.Migrations.Default
   def migration_module(:foreign_key), do: EctoExtractMigrations.Migrations.ForeignKey
   def migration_module(:unique), do: EctoExtractMigrations.Migrations.Unique
 
-  def get_migrations_path(overrides) do
+  def type(EctoExtractMigrations.Parsers.Whitespace), do: :whitespace
+  def type(EctoExtractMigrations.Parsers.Comment), do: :comment
+  def type(EctoExtractMigrations.Parsers.CreateExtension), do: :create_extension
+  def type(EctoExtractMigrations.Parsers.CreateSchema), do: :create_schema
+  def type(EctoExtractMigrations.Parsers.CreateIndex), do: :create_index
+  def type(EctoExtractMigrations.Parsers.CreateTrigger), do: :create_trigger
+  def type(EctoExtractMigrations.Parsers.AlterTable), do: :alter_table
+  def type(EctoExtractMigrations.Parsers.CreateTable), do: :create_table
+  def type(EctoExtractMigrations.Parsers.CreateSequence), do: :create_sequence
+  def type(EctoExtractMigrations.Parsers.CreateType), do: :create_type
+  def type(EctoExtractMigrations.Parsers.CreateView), do: :create_view
+
+  defp get_migrations_path(overrides) do
     repo = overrides[:repo] || "Repo"
     repo_dir = Macro.underscore(repo)
     default_migrations_path = Path.join(["priv", repo_dir, "migrations"])
