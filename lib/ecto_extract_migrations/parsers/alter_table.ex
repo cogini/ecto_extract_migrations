@@ -132,12 +132,28 @@ defmodule EctoExtractMigrations.Parsers.AlterTable do
     |> ignore(optional(whitespace))
     |> reduce({Enum, :into, [%{}]})
 
+  match_alter_table =
+    ignore(string("ALTER TABLE"))
+
   defparsec :parsec_alter_table, alter_table
+  defparsec :parsec_match, match_alter_table
 
   def parse(sql) do
     case parsec_alter_table(sql) do
       {:ok, [value], _, _, _, _} -> {:ok, value}
       error -> error
+    end
+  end
+
+  def match(sql) do
+    case parse(sql) do
+      {:ok, value} ->
+        {:ok, value}
+      _ ->
+        case parsec_match(sql) do
+          {:ok, _, _, _, _, _} -> :start
+          error -> error
+        end
     end
   end
 end
