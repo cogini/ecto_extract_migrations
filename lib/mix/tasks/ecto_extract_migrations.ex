@@ -44,7 +44,7 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
       |> Stream.with_index()
       |> Stream.transform(nil, &parse/2)
       |> Stream.reject(&(&1.type in [:whitespace, :comment]))
-      |> Enum.to_list
+      |> Enum.to_list()
 
     # for result <- results do
     #   Mix.shell().info("#{inspect result}")
@@ -90,7 +90,7 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
 
             module = migration_module(object_type)
             {:ok, migration} = module.migration(data, bindings)
-            file_name = module.file_name(format_index(index), data, bindings)
+            file_name = module.file_name(to_prefix(index), data, bindings)
             path = Path.join(migrations_path, file_name)
             write_migration_file(migration, path)
           end
@@ -103,7 +103,7 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
       EctoExtractMigrations.Migrations.CreateSequence.create_migration_statement(sql, schema, name)
     end
     {:ok, migration} = create_sequences_migration(statements, bindings)
-    filename = Path.join(migrations_path, "#{format_index(index)}_sequences.exs")
+    filename = Path.join(migrations_path, "#{to_prefix(index)}_sequences.exs")
     write_migration_file(migration, filename)
     index = index + 1
 
@@ -162,7 +162,7 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
 
         module = migration_module(object_type)
         {:ok, migration} = module.migration(data, bindings)
-        file_name = module.file_name(format_index(index), data, bindings)
+        file_name = module.file_name(to_prefix(index), data, bindings)
         path = Path.join(migrations_path, file_name)
         write_migration_file(migration, path)
       end
@@ -182,7 +182,7 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
 
             module = migration_module(object_type)
             {:ok, migration} = module.migration(data, bindings)
-            file_name = module.file_name(format_index(index), data, bindings)
+            file_name = module.file_name(to_prefix(index), data, bindings)
             path = Path.join(migrations_path, file_name)
             write_migration_file(migration, path)
           end
@@ -201,7 +201,7 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
 
             module = migration_module(object_type)
             {:ok, migration} = module.migration(data, bindings)
-            file_name = module.file_name(format_index(index), data, bindings)
+            file_name = module.file_name(to_prefix(index), data, bindings)
             path = Path.join(migrations_path, file_name)
             write_migration_file(migration, path)
           end
@@ -353,8 +353,9 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
   def get_table_constraints(_), do: []
 
 
-  # Format numeric index with leading zeroes
-  defp format_index(index) do
+  # Create unique prefix for files from index
+  @spec to_prefix(integer) :: binary
+  defp to_prefix(index) do
     to_string(:io_lib.format('~4..0b', [index]))
   end
 end
