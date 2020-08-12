@@ -211,24 +211,25 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
 
   @spec parse({binary, integer}, nil | {module, binary}) :: {list, nil | {module, binary}}
   def parse({line, idx}, nil) do
-    parsers = [
-      EctoExtractMigrations.Parsers.Whitespace,
-      EctoExtractMigrations.Parsers.Comment,
-      EctoExtractMigrations.Parsers.CreateExtension,
-      EctoExtractMigrations.Parsers.CreateSchema,
-      EctoExtractMigrations.Parsers.CreateIndex,
-      EctoExtractMigrations.Parsers.CreateTrigger,
+    modules = [
+      EctoExtractMigrations.Commands.Whitespace,
+      EctoExtractMigrations.Commands.Comment,
 
-      EctoExtractMigrations.Parsers.AlterTable,
-      EctoExtractMigrations.Parsers.AlterSequence,
+      EctoExtractMigrations.Commands.CreateExtension,
+      EctoExtractMigrations.Commands.CreateSchema,
+      EctoExtractMigrations.Commands.CreateIndex,
+      EctoExtractMigrations.Commands.CreateTrigger,
 
-      EctoExtractMigrations.Parsers.CreateTable,
-      EctoExtractMigrations.Parsers.CreateSequence,
-      EctoExtractMigrations.Parsers.CreateType,
-      EctoExtractMigrations.Parsers.CreateView,
+      EctoExtractMigrations.Commands.AlterTable,
+      EctoExtractMigrations.Commands.AlterSequence,
+
+      EctoExtractMigrations.Commands.CreateTable,
+      EctoExtractMigrations.Commands.CreateSequence,
+      EctoExtractMigrations.Commands.CreateType,
+      EctoExtractMigrations.Commands.CreateView,
     ]
 
-    module_parse(parsers, {line, idx})
+    module_parse(modules, {line, idx})
   end
   def parse({line, idx}, {module, lines}) do
     lines = lines <> line
