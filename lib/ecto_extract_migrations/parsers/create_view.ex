@@ -55,5 +55,5 @@ defmodule EctoExtractMigrations.Parsers.CreateView do
     end
   end
 
+  def tag, do: :create_view
 end
-

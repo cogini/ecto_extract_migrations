@@ -30,4 +30,6 @@ defmodule EctoExtractMigrations.Parsers.Comment do
   end
 
   def match(line), do: parse(line)
+
+  def tag, do: :comment
 end

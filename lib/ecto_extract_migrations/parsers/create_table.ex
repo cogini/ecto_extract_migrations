@@ -400,4 +400,5 @@ defmodule EctoExtractMigrations.Parsers.CreateTable do
   def value(result), do: result
   # def value({:error, value, _, _, _, _}), do: {:error, value}
 
+  def tag, do: :create_table
 end

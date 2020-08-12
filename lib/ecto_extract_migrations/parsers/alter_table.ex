@@ -135,11 +135,11 @@ defmodule EctoExtractMigrations.Parsers.AlterTable do
   match_alter_table =
     ignore(string("ALTER TABLE"))
 
-  defparsec :parsec_alter_table, alter_table
+  defparsec :parsec_parse, alter_table
   defparsec :parsec_match, match_alter_table
 
   def parse(sql) do
-    case parsec_alter_table(sql) do
+    case parsec_parse(sql) do
       {:ok, [value], _, _, _, _} -> {:ok, value}
       error -> error
     end
@@ -156,4 +156,6 @@ defmodule EctoExtractMigrations.Parsers.AlterTable do
         end
     end
   end
+
+  def tag, do: :alter_table
 end

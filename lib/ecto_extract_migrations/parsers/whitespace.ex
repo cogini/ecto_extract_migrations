@@ -16,5 +16,6 @@ defmodule EctoExtractMigrations.Parsers.Whitespace do
   end
 
   def match(line), do: parse(line)
-end
 
+  def tag, do: :whitespace
+end

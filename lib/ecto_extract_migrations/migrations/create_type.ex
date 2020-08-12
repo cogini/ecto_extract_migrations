@@ -20,7 +20,6 @@ defmodule EctoExtractMigrations.Migrations.CreateType do
 
     template_dir = Application.app_dir(@app, ["priv", "templates"])
     template_path = Path.join(template_dir, "type.eex")
-    {:ok, migration} = EctoExtractMigrations.eval_template(template_path, bindings)
-    migration
+    EctoExtractMigrations.eval_template(template_path, bindings)
   end
 end

@@ -55,7 +55,7 @@ defmodule EctoExtractMigrations.Migrations.CreateTable do
         end
       end
     end
-    Macro.to_string(ast)
+    {:ok, Macro.to_string(ast)}
   end
 
 

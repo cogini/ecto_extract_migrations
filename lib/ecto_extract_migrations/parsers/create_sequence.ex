@@ -141,4 +141,5 @@ defmodule EctoExtractMigrations.Parsers.CreateSequence do
     end
   end
 
+  def tag, do: :create_sequence
 end

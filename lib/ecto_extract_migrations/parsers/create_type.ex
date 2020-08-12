@@ -73,4 +73,5 @@ defmodule EctoExtractMigrations.Parsers.CreateType do
     end
   end
 
+  def tag, do: :create_type
 end

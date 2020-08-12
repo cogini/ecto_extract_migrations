@@ -11,7 +11,7 @@ defmodule EctoExtractMigrations.Execute do
         end
       end
     end
-    Macro.to_string(ast)
+    {:ok, Macro.to_string(ast)}
   end
 
   def create_migration(module_name, up_sql) do
@@ -24,6 +24,6 @@ defmodule EctoExtractMigrations.Execute do
         end
       end
     end
-    Macro.to_string(ast)
+    {:ok, Macro.to_string(ast)}
   end
 end

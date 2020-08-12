@@ -42,8 +42,7 @@ defmodule EctoExtractMigrations.Migrations.CreateIndex do
 
     template_dir = Application.app_dir(@app, ["priv", "templates"])
     template_path = Path.join(template_dir, "index.eex")
-    {:ok, migration} = EctoExtractMigrations.eval_template(template_path, bindings)
-    migration
+    EctoExtractMigrations.eval_template(template_path, bindings)
   end
 
   @doc "Set prefix opt if schema is not public"

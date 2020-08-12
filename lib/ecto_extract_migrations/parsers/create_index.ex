@@ -198,4 +198,6 @@ defmodule EctoExtractMigrations.Parsers.CreateIndex do
   end
 
   def match(line), do: parse(line)
+
+  def tag, do: :create_index
 end

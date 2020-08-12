@@ -88,4 +88,6 @@ defmodule EctoExtractMigrations.Parsers.CreateTrigger do
   end
 
   def match(line), do: parse(line)
+
+  def tag, do: :create_trigger
 end

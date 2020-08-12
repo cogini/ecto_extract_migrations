@@ -69,5 +69,5 @@ defmodule EctoExtractMigrations.Parsers.CreateExtension do
 
   def match(line), do: parse(line)
 
+  def tag, do: :create_extension
 end
-
