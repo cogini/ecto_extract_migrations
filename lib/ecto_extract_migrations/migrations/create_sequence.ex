@@ -29,5 +29,5 @@ defmodule EctoExtractMigrations.Migrations.CreateSequence do
     EctoExtractMigrations.eval_template(template_path, bindings)
   end
 
-  EEx.function_from_string(:def, :create_migration_statement, @migration_statement, [:sql, :schema, :name])
+  EEx.function_from_string(:def, :migration_statement, @migration_statement, [:sql, :schema, :name])
 end

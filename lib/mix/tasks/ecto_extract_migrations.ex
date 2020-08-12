@@ -14,10 +14,6 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
   """
   @shortdoc "Create Ecto migration files from db schema SQL file"
 
-  @app :ecto_extract_migrations
-
-  # alias EctoExtractMigrations.Reference
-
   use Mix.Task
 
   @impl Mix.Task
@@ -84,14 +80,13 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
       for object_type <- object_types, reduce: index do
         acc ->
           objects = by_type[object_type]
-          for {%{sql: sql, data: data, idx: line}, index} <- Enum.with_index(objects, acc) do
+          for {%{module: module, sql: sql, data: data, idx: line}, index} <- Enum.with_index(objects, acc) do
             Mix.shell().info("SQL #{object_type} #{line} \n#{sql}\n#{inspect data}")
             data = Map.put(data, :sql, sql)
 
-            module = migration_module(object_type)
             {:ok, migration} = module.migration(data, bindings)
-            file_name = module.file_name(to_prefix(index), data, bindings)
-            path = Path.join(migrations_path, file_name)
+            file_name = module.file_name(data, bindings)
+            path = Path.join(migrations_path, Enum.join([to_prefix(index), file_name], "_"))
             write_migration_file(migration, path)
           end
           acc + length(objects)
@@ -100,9 +95,9 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
     # Create sequences
     statements = for %{data: data, sql: sql} <- by_type[:create_sequence] do
       [schema, name] = data.name
-      EctoExtractMigrations.Migrations.CreateSequence.create_migration_statement(sql, schema, name)
+      EctoExtractMigrations.Commands.CreateSequence.migration_statement(sql, schema, name)
     end
-    {:ok, migration} = create_sequences_migration(statements, bindings)
+    {:ok, migration} = EctoExtractMigrations.Commands.CreateSequence.migration_combine(statements, bindings)
     filename = Path.join(migrations_path, "#{to_prefix(index)}_sequences.exs")
     write_migration_file(migration, filename)
     index = index + 1
@@ -146,7 +141,7 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
 
     object_type = :create_table
     objects = by_type[object_type]
-    for {%{sql: sql, data: data, idx: line}, index} <- Enum.with_index(objects, index) do
+    for {%{module: module, sql: sql, data: data, idx: line}, index} <- Enum.with_index(objects, index) do
       Mix.shell().info("SQL #{object_type} #{line} \n#{sql}\n#{inspect data}")
       data = Map.put(data, :sql, sql)
 
@@ -160,9 +155,8 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
           |> table_set_pk(primary_keys[data.name])
           |> table_set_default(column_defaults[data.name])
 
-        module = migration_module(object_type)
         {:ok, migration} = module.migration(data, bindings)
-        file_name = module.file_name(to_prefix(index), data, bindings)
+        file_name = module.file_name(data, bindings)
         path = Path.join(migrations_path, file_name)
         write_migration_file(migration, path)
       end
@@ -176,13 +170,12 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
       for object_type <- object_types, reduce: index do
         acc ->
           objects = by_type[object_type]
-          for {%{sql: sql, data: data, idx: line}, index} <- Enum.with_index(objects, acc) do
+          for {%{module: module, sql: sql, data: data, idx: line}, index} <- Enum.with_index(objects, acc) do
             Mix.shell().info("SQL #{object_type} #{line} \n#{sql}\n#{inspect data}")
             data = Map.put(data, :sql, sql)
 
-            module = migration_module(object_type)
             {:ok, migration} = module.migration(data, bindings)
-            file_name = module.file_name(to_prefix(index), data, bindings)
+            file_name = module.file_name(data, bindings)
             path = Path.join(migrations_path, file_name)
             write_migration_file(migration, path)
           end
@@ -190,9 +183,8 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
       end
 
     # object_types = [:default, :foreign_key, :unique]
-    object_types = [:foreign_key, :unique]
     #index =
-      for object_type <- object_types, reduce: index do
+    for object_type <- [:foreign_key, :unique], reduce: index do
         acc ->
           objects = at_objects[object_type]
           for {%{sql: sql, data: data, idx: line}, index} <- Enum.with_index(objects, acc) do
@@ -235,7 +227,7 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
     lines = lines <> line
     case module.parse(lines) do
       {:ok, value} ->
-        {[%{type: module.tag(), idx: idx, sql: lines, data: value}], nil}
+        {[%{module: module, type: module.type(), idx: idx, sql: lines, data: value}], nil}
       _ ->
         # Mix.shell().info("#{idx}> :rest #{String.trim_trailing(line)}")
         {[], {module, lines}}
@@ -251,7 +243,7 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
     case module.match(line) do
       {:ok, value} ->
         # Line parsed
-        {[%{type: module.tag(), idx: idx, sql: line, data: value}], nil}
+        {[%{module: module, type: module.type(), idx: idx, sql: line, data: value}], nil}
       :start ->
         # Matched first line of multiline statement
         # Mix.shell().info("#{idx}> :start #{String.trim_trailing(line)}")
@@ -291,13 +283,6 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
       [schema, name] = result.data.name
       EctoExtractMigrations.Migrations.CreateSequence.create_migration_statement(result.sql, schema, name)
     end
-  end
-
-  def create_sequences_migration(statements, bindings) do
-    bindings = Keyword.merge([module_name: "Sequences", sequences: statements], bindings)
-    template_dir = Application.app_dir(@app, ["priv", "templates"])
-    template_path = Path.join(template_dir, "sequences.eex")
-    EctoExtractMigrations.eval_template(template_path, bindings)
   end
 
   # ALTER TABLE ADD CONSTRAINT PRIMARY KEY
