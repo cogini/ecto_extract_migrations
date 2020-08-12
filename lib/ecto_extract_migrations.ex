@@ -18,7 +18,7 @@ defmodule EctoExtractMigrations do
   end
 
   @doc "Convert SQL name to Elixir module name"
-  @spec format_module_name(binary | list(binary)) :: atom
+  @spec format_module_name(binary | list(binary)) :: binary
   def format_module_name(table) when is_binary(table), do: Macro.camelize(table)
   def format_module_name(["public", table]), do: Macro.camelize(table)
   def format_module_name([schema, table]) do
