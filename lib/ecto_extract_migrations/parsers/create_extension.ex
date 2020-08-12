@@ -58,10 +58,10 @@ defmodule EctoExtractMigrations.Parsers.CreateExtension do
     |> ignore(optional(whitespace))
     |> reduce({Enum, :into, [%{}]})
 
-  defparsec :parsec_create_extension, create_extension
+  defparsec :parsec_parse, create_extension
 
   def parse(sql) do
-    case parsec_create_extension(sql) do
+    case parsec_parse(sql) do
       {:ok, [value], _, _, _, _} -> {:ok, value}
       error -> error
     end
