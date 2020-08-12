@@ -5,10 +5,10 @@ defmodule EctoExtractMigrations.Parsers.Whitespace do
 
   whitespace = Common.whitespace()
 
-  defparsec :parsec_whitespace, whitespace
+  defparsec :parsec_parse, whitespace
 
   def parse(line) do
-    case parsec_whitespace(line) do
+    case parsec_parse(line) do
       # {:ok, [value], _, _, _, _} -> {:ok, value}
       {:ok, [_value], _, _, _, _} -> {:ok, ""}
       error -> error

@@ -77,10 +77,10 @@ defmodule EctoExtractMigrations.Parsers.CreateTrigger do
     |> ignore(optional(whitespace))
     |> reduce({Enum, :into, [%{}]})
 
-  defparsec :parsec_create_trigger, create_trigger
+  defparsec :parsec_parse, create_trigger
 
   def parse(sql) do
-    case parsec_create_trigger(sql) do
+    case parsec_parse(sql) do
       {:ok, [value], _, _, _, _} ->
         {:ok, value}
       error -> error
