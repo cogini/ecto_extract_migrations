@@ -1,4 +1,4 @@
-defmodule <%= repo %>.Migrations.<%= module_name %> do
+defmodule <%= repo %>.Migrations.Extension.<%= module_name %> do
   use Ecto.Migration
 
   def up do
@@ -9,6 +9,6 @@ defmodule <%= repo %>.Migrations.<%= module_name %> do
   end
 
   def down do
-    execute("drop extension if exists <%= name %>")
+    execute("DROP EXTENSION IF EXISTS <%= name %>")
   end
 end
