@@ -1,4 +1,4 @@
-defmodule <%= repo %>.Migrations.<%= module_name %> do
+defmodule <%= repo %>.Migrations.Type.<%= module_name %> do
   use Ecto.Migration
 
   def up do
@@ -9,6 +9,6 @@ defmodule <%= repo %>.Migrations.<%= module_name %> do
   end
 
   def down do
-    execute("drop type if exists <%= schema %>.<%= name %>")
+    execute("DROP TYPE IF EXISTS <%= schema %>.<%= name %>")
   end
 end

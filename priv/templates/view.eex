@@ -1,4 +1,4 @@
-defmodule <%= repo %>.Migrations.<%= module_name %> do
+defmodule <%= repo %>.Migrations.View.<%= module_name %> do
   use Ecto.Migration
 
   def up do
@@ -9,7 +9,6 @@ defmodule <%= repo %>.Migrations.<%= module_name %> do
   end
 
   def down do
-    execute("drop view if exists <%= schema %>.<%= name %>")
+    execute("DROP VIEW IF EXISTS <%= schema %>.<%= name %>")
   end
 end
-
