@@ -1,4 +1,4 @@
-defmodule <%= repo %>.Migrations.<%= module_name %> do
+defmodule <%= repo %>.Migrations.Sequences.<%= module_name %> do
   use Ecto.Migration
 
   def change do
