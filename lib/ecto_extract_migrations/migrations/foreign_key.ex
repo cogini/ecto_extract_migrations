@@ -14,8 +14,8 @@ defmodule EctoExtractMigrations.Migrations.ForeignKey do
   # ALTER TABLE ONLY chat.assignment
   #     ADD CONSTRAINT assignment_care_taker_id_fkey FOREIGN KEY (user_id) REFERENCES chat."user"(id);
 
-  def file_name(prefix, %{table: [schema, table], columns: columns}, _bindings) do
-    "#{prefix}_alter_table_foreign_key_#{schema}_#{table}_#{Enum.join(columns, "_")}.exs"
+  def file_name(%{table: [schema, table], columns: columns}, _bindings) do
+    "alter_table_foreign_key_#{schema}_#{table}_#{Enum.join(columns, "_")}.exs"
   end
 
   def migration(data, bindings) do
