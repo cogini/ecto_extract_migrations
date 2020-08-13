@@ -12,8 +12,8 @@ defmodule EctoExtractMigrations.Migrations.Unique do
   # ALTER TABLE ONLY chat.session
   #     ADD CONSTRAINT session_token_key UNIQUE (token);
 
-  def file_name(prefix, %{table: [schema, table], columns: columns}, _bindings) do
-    "#{prefix}_alter_table_foreign_key_#{schema}_#{table}_#{Enum.join(columns, "_")}.exs"
+  def file_name(%{table: [schema, table], columns: columns}, _bindings) do
+    "alter_table_foreign_key_#{schema}_#{table}_#{Enum.join(columns, "_")}.exs"
   end
 
   def migration(data, bindings) do
