@@ -10,7 +10,10 @@ defmodule EctoExtractMigrations.Commands.CreateTrigger do
   # %{name: "chat_message_update"}
   # CREATE TRIGGER chat_message_update BEFORE UPDATE ON chat.message FOR EACH ROW EXECUTE PROCEDURE public.chat_update_timestamp();
 
-  def file_name(data, _bindings), do: "create_trigger_#{data.name}.exs"
+  @spec file_name(map, Keyword.t) :: binary
+  def file_name(data, bindings)
+  def file_name(%{name: [schema, name]}, _bindings), do: "trigger_#{schema}_#{name}.exs"
+  def file_name(%{name: name}, _bindings), do: "trigger_#{name}.exs"
 
   def migration(data, bindings) do
     module_name = module_name(data, bindings)

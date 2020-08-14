@@ -6,6 +6,7 @@ defmodule EctoExtractMigrations.Commands.CreateSchema do
   defdelegate parse(sql, state), to: EctoExtractMigrations.Parsers.CreateSchema
   defdelegate match(sql), to: EctoExtractMigrations.Parsers.CreateSchema
 
+  @spec file_name(map, Keyword.t) :: binary
   def file_name(data, _bindings), do: "schema_#{data.name}.exs"
 
   def migration(data, bindings) do

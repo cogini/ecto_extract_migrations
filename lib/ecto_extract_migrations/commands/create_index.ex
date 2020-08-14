@@ -1,17 +1,30 @@
 defmodule EctoExtractMigrations.Commands.CreateIndex do
-  @app :ecto_extract_migrations
+  @moduledoc "CREATE INDEX"
 
   def type, do: :create_index
   defdelegate parse(sql), to: EctoExtractMigrations.Parsers.CreateIndex
   defdelegate parse(sql, state), to: EctoExtractMigrations.Parsers.CreateIndex
   defdelegate match(sql), to: EctoExtractMigrations.Parsers.CreateIndex
 
-  def file_name(data, _bindings), do: "index_#{data.name}.exs"
+  @spec file_name(map, Keyword.t) :: binary
+  def file_name(data, bindings)
+  def file_name(%{name: name}, _bindings), do: "index_#{name}.exs"
+
+  # %{key: [:member_id], name: "t_eligibility_member_id_idx", table_name: ["bnd", "t_eligibility"], using: "btree"}
+  # CREATE INDEX t_eligibility_member_id_idx ON bnd.t_eligibility USING btree (member_id);
 
   def migration(data, bindings) do
-    [_schema, table] = data.table_name
+    module_name = module_name(data, bindings)
+    # table_name = table_name(data)
+    [_prefix, table_name] = data.table_name
 
-    table_name = ~s|"#{table}"|
+    # :name - the name of the index. Defaults to "#{table}_#{column}_index".
+    # :unique - indicates whether the index should be unique. Defaults to false.
+    # :concurrently - indicates whether the index should be created/dropped concurrently.
+    # :using - configures the index type.
+    # :prefix - specify an optional prefix for the index.
+    # :where - specify conditions for a partial index.
+    # :include - specify fields for a covering index. This is not supported by all databases. For more information on PostgreSQL support, please read the official docs.
 
     opts = [
       name: data[:name],
@@ -22,63 +35,39 @@ defmodule EctoExtractMigrations.Commands.CreateIndex do
       where: data[:where],
       include: data[:include],
     ]
+    |> Enum.reject(fn {_key, value} -> value == nil end)
 
-   opts = opts
-      |> Enum.reject(fn {_key, value} -> value == nil end)
-      |> Enum.map(&format_opt/1)
-      |> Enum.join(", ")
+    ast = quote do
+      defmodule unquote(module_name) do
+        use Ecto.Migration
 
-    index_args = Enum.join([table_name, format_key(data.key)] ++ [opts], ", ")
-
-    # :name - the name of the index. Defaults to "#{table}_#{column}_index".
-    # :unique - indicates whether the index should be unique. Defaults to false.
-    # :concurrently - indicates whether the index should be created/dropped concurrently.
-    # :using - configures the index type.
-    # :prefix - specify an optional prefix for the index.
-    # :where - specify conditions for a partial index.
-    # :include - specify fields for a covering index. This is not supported by all databases. For more information on PostgreSQL support, please read the official docs.
-
-    bindings = Keyword.merge(bindings, [
-      module_name: module_name(data, bindings),
-      index_args: index_args,
-    ])
-
-    template_dir = Application.app_dir(@app, ["priv", "templates"])
-    template_path = Path.join(template_dir, "index.eex")
-    EctoExtractMigrations.eval_template(template_path, bindings)
+        def change do
+          create index(unquote(table_name), unquote(data.key), unquote(opts))
+        end
+      end
+    end
+    {:ok, Macro.to_string(ast)}
   end
 
-  @doc "Set prefix opt if schema is not public"
-  def table_opt_prefix(%{name: value}) when is_binary(value), do: nil
-  def table_opt_prefix(%{name: ["public", _table]}), do: nil
-  def table_opt_prefix(%{name: [schema, _table]}), do: schema
-
   def module_name(%{name: name}, bindings) do
-    [bindings[:repo], "migrations", "create_index"] ++ [name]
+    [bindings[:repo], "migrations", "index"] ++ [name]
+    |> Enum.map(&Macro.camelize/1)
+    |> Module.concat()
+  end
+  def module_name(%{table_name: table_name, key: key}, bindings) do
+    [bindings[:repo], "migrations", "index"] ++ table_name ++ [key]
     |> Enum.map(&Macro.camelize/1)
     |> Module.concat()
   end
 
-  def format_opt({key, value}) when is_binary(value) do
-    value = escape(value)
-    if String.contains?(value, ~s(")) do
-      ~s|#{key}: """\n#{value}\n"""|
-    else
-      ~s|#{key}: "#{value}"|
-    end
-  end
-  def format_opt({key, value}), do: "#{key}: #{value}"
+  # # Get table name, with schema prefix if it is not public
+  # defp table_name(%{table_name: ["public", name]}), do: name
+  # defp table_name(%{table_name: [_schema, _name] = comps}), do: Enum.join(comps, ".")
+  # defp table_name(%{table_name: name}), do: name
 
-  def format_key(values) do
-    value =
-      values
-      |> Enum.map(&format_column/1)
-      |> Enum.join(", ")
-    "[" <> value <> "]"
-  end
+  # Get schema prefix if it is not public
+  defp table_opt_prefix(%{table_name: ["public", _table]}), do: nil
+  defp table_opt_prefix(%{table_name: [schema, _table]}), do: schema
+  defp table_opt_prefix(%{table_name: value}) when is_binary(value), do: nil
 
-  def escape(value), do: String.replace(value, "\\", "\\\\")
-
-  def format_column(value) when is_atom(value), do: ~s|:#{value}|
-  def format_column(value) when is_binary(value), do: ~s|"#{value}"|
 end

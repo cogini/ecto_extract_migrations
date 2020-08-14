@@ -15,7 +15,10 @@ defmodule EctoExtractMigrations.Commands.CreateSequence do
   defdelegate parse(sql, state), to: EctoExtractMigrations.Parsers.CreateSequence
   defdelegate match(sql), to: EctoExtractMigrations.Parsers.CreateSequence
 
-  def file_name(data, _bindings), do: "sequence_#{data.name}.exs"
+  @spec file_name(map, Keyword.t) :: binary
+  def file_name(data, bindings)
+  def file_name(%{name: [schema, name]}, _bindings), do: "sequence_#{schema}_#{name}.exs"
+  def file_name(%{name: name}, _bindings), do: "sequence_#{name}.exs"
 
   def migration(data, bindings) do
     Mix.shell().info("sequence #{data[:name]}")

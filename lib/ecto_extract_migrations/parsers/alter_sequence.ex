@@ -19,6 +19,14 @@ defmodule EctoExtractMigrations.Parsers.AlterSequence do
   # ALTER SEQUENCE [ IF EXISTS ] name RENAME TO new_name
   # ALTER SEQUENCE [ IF EXISTS ] name SET SCHEMA new_schema
 
+  # %{
+  #    data: %{owned_by: [table: ["chat", "assignment"], column: "id"], sequence: ["chat", "assignment_id_seq"]},
+  #    line_num: 409,
+  #    module: EctoExtractMigrations.Commands.AlterSequence,
+  #    sql: "ALTER SEQUENCE chat.assignment_id_seq OWNED BY chat.assignment.id;\n",
+  #    type: :alter_sequence
+  # }
+
   whitespace = Common.whitespace()
   name = Common.name()
 
@@ -62,7 +70,7 @@ defmodule EctoExtractMigrations.Parsers.AlterSequence do
     |> ignore(whitespace)
     |> concat(sequence_name)
     |> concat(owned_by)
-    |> ignore(ascii_char([?;]))
+    |> ignore(ascii_char([?;])) |> label(";")
     |> ignore(optional(whitespace))
     |> reduce({Enum, :into, [%{}]})
 

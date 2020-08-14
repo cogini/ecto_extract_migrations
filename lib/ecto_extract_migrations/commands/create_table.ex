@@ -5,9 +5,10 @@ defmodule EctoExtractMigrations.Commands.CreateTable do
   defdelegate parse(sql, state), to: EctoExtractMigrations.Parsers.CreateTable
   defdelegate match(sql), to: EctoExtractMigrations.Parsers.CreateTable
 
-  def file_name(%{name: [schema, table]}, _bindings) do
-    "table_#{schema}_#{table}.exs"
-  end
+  @spec file_name(map, Keyword.t) :: binary
+  def file_name(data, bindings)
+  def file_name(%{name: [schema, name]}, _bindings), do: "table_#{schema}_#{name}.exs"
+  def file_name(%{name: name}, _bindings), do: "table_#{name}.exs"
 
   @doc "Create module name based on data"
   def module_name(%{name: name}, bindings) when is_list(name) do
@@ -43,7 +44,6 @@ defmodule EctoExtractMigrations.Commands.CreateTable do
     end
     {:ok, Macro.to_string(ast)}
   end
-
 
   @doc "Set prefix opt if schema is not public"
   def table_opt_prefix(%{name: value}) when is_binary(value), do: nil

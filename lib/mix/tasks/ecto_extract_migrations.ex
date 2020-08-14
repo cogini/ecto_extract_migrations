@@ -53,11 +53,36 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
     # end
 
     # TODO
+    # CREATE INDEX
+    #   Generate with macros not text
+    #   Consolidate statements for performance
+    #
     # CREATE TABLE
     #   Parse CONSTRAINTS with new expression parser
     #   Column options are not in order, use choice
     #     e.g. public.login_log
     #   Handle column constraints
+    #
+    # invitation_faciliity table getting id field
+    #
+    #  Table CONSTRAINT, e.g. public.case_coupon
+    #
+    # For consistency, create sequences separately from table defaults
+    #
+    #   CREATE TABLE public.access_questionnaire_user (
+    #       id integer NOT NULL,
+    #       questionnaire_id integer NOT NULL,
+    #       user_id integer NOT NULL
+    #   );
+    #   CREATE SEQUENCE public.access_questionnaire_user_id_seq
+    #       START WITH 1
+    #       INCREMENT BY 1
+    #       NO MINVALUE
+    #       NO MAXVALUE
+    #       CACHE 1;
+    #   ALTER SEQUENCE public.access_questionnaire_user_id_seq OWNED BY public.access_questionnaire_user.id;
+    #
+    # ALTER TABLE ONLY chat.assignment ALTER COLUMN id SET DEFAULT nextval('chat.assignment_id_seq'::regclass);
     #
     # ALTER TABLE
     #   ALTER TABLE ONLY chat.assignment ALTER COLUMN id SET DEFAULT nextval
@@ -66,15 +91,14 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
     #
     #   Merge with create table
     #
-    # CREATE INDEX
-    #   Consolidate statements for performance
-    #
-    # CREATE FUNCTION
     # CREATE TRIGGER
 
     # Group results by type
     by_type = Enum.group_by(results, &(&1.type))
     Mix.shell().info("types: #{inspect Map.keys(by_type)}")
+
+    # Collect ALTER SEQUENCE statements
+    as_objects = Enum.group_by(by_type[:alter_sequence], &alter_sequence_type/1)
 
     # Collect ALTER TABLE statements
     at_objects = Enum.group_by(by_type[:alter_table], &alter_table_type/1)
@@ -86,13 +110,13 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
       end
 
     # Collect table defaults from ALTER TABLE statements
-    column_defaults =
-      for result <- at_objects[:default], reduce: %{} do
-        acc ->
-          %{table: table, column: column, default: default} = result.data
-          value = acc[table] || %{}
-          Map.put(acc, table, Map.put(value, column, default))
-      end
+    # column_defaults =
+    #   for result <- at_objects[:default], reduce: %{} do
+    #     acc ->
+    #       %{table: table, column: column, default: default} = result.data
+    #       value = acc[table] || %{}
+    #       Map.put(acc, table, Map.put(value, column, default))
+    #   end
 
     # Collect table foreign key constraints from ALTER TABLE statements
 
@@ -157,7 +181,7 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
           data
           |> Map.put(:sql, sql)
           |> table_set_pk(primary_keys[data.name])
-          |> table_set_default(column_defaults[data.name])
+          # |> table_set_default(column_defaults[data.name])
 
           Mix.shell().info("\nSQL #{line_num} #{object_type}\n#{inspect data}")
           Mix.shell().info(sql)
@@ -171,10 +195,20 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
           {file_name, migration}
       end
 
-    # [:create_view, :create_trigger, :create_index]
-    # Create views and indexes
+    # Create ALTER SEQUENCE OWNED BY
+    # data: %{owned_by: [table: ["chat", "assignment"], column: "id"], sequence: ["chat", "assignment_id_seq"]},
+    statements = for %{data: data, sql: sql} <- as_objects[:owned_by] do
+      [schema, name] = data.sequence
+      EctoExtractMigrations.Commands.AlterSequence.migration_statement(sql, schema, name)
+    end
+    {:ok, migration} = EctoExtractMigrations.Commands.AlterSequence.migration_combine(statements, bindings)
+    file_name = "alter_sequences_owned_by.exs"
+    Mix.shell().info(file_name)
+    alter_sequences_owned_by = [{file_name, migration}]
+
+    # Create views, triggers, and indexes
     phase_3 =
-      for object_type <- [:create_view, :create_index], object <- by_type[object_type] do
+      for object_type <- [:create_view, :create_trigger, :create_index], object <- by_type[object_type] do
         %{module: module, sql: sql, data: data, line_num: line_num} = object
 
         Mix.shell().info("SQL #{line_num} #{object_type}\n#{inspect data}")
@@ -191,26 +225,45 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
       end
 
     # Create foreign keys and unique constraints
-    phase_4 =
-      for object_type <- [:foreign_key, :unique], object <- at_objects[object_type] do
-        %{sql: sql, data: data, line_num: line_num} = object
+    # phase_4 =
+    #   for object_type <- [:foreign_key, :unique], object <- at_objects[object_type] do
+    #     %{sql: sql, data: data, line_num: line_num} = object
+    #
+    #     Mix.shell().info("SQL #{line_num} #{object_type}\n#{inspect data}")
+    #     Mix.shell().info(sql)
+    #
+    #     data = Map.put(data, :sql, sql)
+    #     module = migration_module(object_type)
+    #     {:ok, migration} = module.migration(data, bindings)
+    #     file_name = module.file_name(data, bindings)
+    #
+    #     Mix.shell().info(file_name)
+    #     Mix.shell().info(migration)
+    #
+    #     {file_name, migration}
+    #   end
 
-        Mix.shell().info("SQL #{line_num} #{object_type}\n#{inspect data}")
-        Mix.shell().info(sql)
+    Mix.shell().info("alter table types: #{inspect Map.keys(at_objects)}")
 
-        data = Map.put(data, :sql, sql)
-        module = migration_module(object_type)
-        {:ok, migration} = module.migration(data, bindings)
-        file_name = module.file_name(data, bindings)
-
-        Mix.shell().info(file_name)
-        Mix.shell().info(migration)
-
-        {file_name, migration}
-      end
+    # Create ALTER TABLE
+    statements = for action <- [:default, :foreign_key, :unique], %{data: data, sql: sql} <- at_objects[action] do
+      [schema, name] = data.table
+      EctoExtractMigrations.Commands.AlterTable.migration_statement(sql, schema, name)
+    end
+    {:ok, migration} = EctoExtractMigrations.Commands.AlterTable.migration_combine(statements, bindings)
+    file_name = "alter_tables.exs"
+    Mix.shell().info(file_name)
+    alter_tables = [{file_name, migration}]
 
     # Write migrations to file
-    files = List.flatten([phase_1, sequences_migrations, create_table_migrations, phase_3, phase_4])
+    files = List.flatten([
+      phase_1,
+      sequences_migrations,
+      create_table_migrations,
+      alter_sequences_owned_by,
+      phase_3,
+      alter_tables
+    ])
     for {{file_name, migration}, index} <- Enum.with_index(files, 1) do
       path = Path.join(migrations_path, "#{to_prefix(index)}_#{file_name}")
       Mix.shell().info("#{path}")
@@ -218,8 +271,8 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
     end
   end
 
-  def migration_module(:foreign_key), do: EctoExtractMigrations.Migrations.ForeignKey
-  def migration_module(:unique), do: EctoExtractMigrations.Migrations.Unique
+  # def migration_module(:foreign_key), do: EctoExtractMigrations.Migrations.ForeignKey
+  # def migration_module(:unique), do: EctoExtractMigrations.Migrations.Unique
 
   # Get constraint type
   # ALTER TABLE ADD CONSTRAINT PRIMARY KEY
@@ -230,6 +283,10 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
   def alter_table_type(%{data: %{action: :set_default}}), do: :default
   # ALTER TABLE ADD CONSTRAINT UNIQUE
   def alter_table_type(%{data: %{action: :add_table_constraint, type: :unique}}), do: :unique
+
+  # Get alter sequence type
+  # ALTER SEQUENCE chat.assignment_id_seq OWNED BY chat.assignment.id;
+  def alter_sequence_type(%{data: %{owned_by: _}}), do: :owned_by
 
   # Set primary_key: true on column if it is part of table primary key
   def table_set_pk(data, nil), do: data

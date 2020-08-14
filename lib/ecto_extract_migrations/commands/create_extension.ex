@@ -8,7 +8,9 @@ defmodule EctoExtractMigrations.Commands.CreateExtension do
   defdelegate match(sql), to: EctoExtractMigrations.Parsers.CreateExtension
 
   @spec file_name(map, Keyword.t) :: binary
-  def file_name(data, _bindings), do: "extension_#{data.schema}_#{data.name}.exs"
+  def file_name(data, bindings)
+  def file_name(%{name: [schema, name]}, _bindings), do: "extension_#{schema}_#{name}.exs"
+  def file_name(%{name: name}, _bindings), do: "extension_#{name}.exs"
 
   @spec migration(map, Keyword.t) :: {:ok, binary} | {:error, term}
   def migration(data, bindings) do

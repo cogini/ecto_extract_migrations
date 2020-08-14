@@ -6,10 +6,10 @@ defmodule EctoExtractMigrations.Commands.CreateType do
   defdelegate parse(sql, state), to: EctoExtractMigrations.Parsers.CreateType
   defdelegate match(sql), to: EctoExtractMigrations.Parsers.CreateType
 
-  def file_name(data, _bindings) do
-    name = Enum.join(data.name, "_")
-    "type_#{name}.exs"
-  end
+  @spec file_name(map, Keyword.t) :: binary
+  def file_name(data, bindings)
+  def file_name(%{name: [schema, name]}, _bindings), do: "type_#{schema}_#{name}.exs"
+  def file_name(%{name: name}, _bindings), do: "type_#{name}.exs"
 
   def migration(data, bindings) do
     [schema, name] = data.name

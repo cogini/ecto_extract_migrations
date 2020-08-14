@@ -1,0 +1,9 @@
+defmodule <%= repo %>.Migrations.AlterSequences.<%= module_name %> do
+  use Ecto.Migration
+
+  def up do
+    <%= for statement <- statements do %>
+      <%= statement %>
+    <% end %>
+  end
+end
