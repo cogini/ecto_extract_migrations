@@ -6,10 +6,11 @@ defmodule EctoExtractMigrations.Commands.CreateFunction do
   defdelegate parse(sql, state), to: EctoExtractMigrations.Parsers.CreateFunction
   defdelegate match(sql), to: EctoExtractMigrations.Parsers.CreateFunction
 
-  def file_name(data, _bindings), do: "function_#{data.name}.exs"
+  def file_name(%{name: [schema, name]}, _bindings), do: "function_#{schema}_#{name}.exs"
+  def file_name(%{name: name}, _bindings), do: "function_#{name}.exs"
 
   def migration(data, bindings) do
-    Mix.shell().info("view #{data[:name]}")
+    Mix.shell().info("function #{data[:name]}")
 
     [schema, name] = data.name
     bindings = Keyword.merge(bindings, [
@@ -20,7 +21,7 @@ defmodule EctoExtractMigrations.Commands.CreateFunction do
     ])
 
     template_dir = Application.app_dir(@app, ["priv", "templates"])
-    template_path = Path.join(template_dir, "view.eex")
+    template_path = Path.join(template_dir, "function.eex")
     EctoExtractMigrations.eval_template(template_path, bindings)
   end
 

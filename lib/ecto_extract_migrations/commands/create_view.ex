@@ -6,7 +6,8 @@ defmodule EctoExtractMigrations.Commands.CreateView do
   defdelegate parse(sql, state), to: EctoExtractMigrations.Parsers.CreateView
   defdelegate match(sql), to: EctoExtractMigrations.Parsers.CreateView
 
-  def file_name(data, _bindings), do: "view_#{data.name}.exs"
+  def file_name(%{name: [schema, name]}, _bindings), do: "view_#{schema}_#{name}.exs"
+  def file_name(%{name: name}, _bindings), do: "view_#{name}.exs"
 
   def migration(data, bindings) do
     Mix.shell().info("view #{data[:name]}")

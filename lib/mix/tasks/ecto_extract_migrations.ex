@@ -112,14 +112,15 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
     # table_constraints = Enum.flat_map(results, &get_table_constraints/1)
     # Mix.shell().info("table_constraints: #{inspect table_constraints}")
 
-    # Default template bindings
+    # Base bindings for templates
     bindings = [
       repo: repo,
     ]
 
-    # Create objects
+    # Create extensions, schemas and types
     phase_1 =
-      for object_type <- [:create_extension, :create_schema, :create_type], object <- by_type[object_type] do
+      for object_type <- [:create_extension, :create_schema, :create_type, :create_function],
+          object <- by_type[object_type] do
         %{module: module, sql: sql, data: data, line_num: line_num} = object
 
         Mix.shell().info("SQL #{line_num} #{object_type}\n#{inspect data}")
@@ -135,7 +136,7 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
         {file_name, migration}
       end
 
-    # Create sequences, merging multiple sequences into one migration
+    # Create sequences, merging multiple sequences into one
     statements = for %{data: data, sql: sql} <- by_type[:create_sequence] do
       [schema, name] = data.name
       EctoExtractMigrations.Commands.CreateSequence.migration_statement(sql, schema, name)
@@ -171,6 +172,7 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
       end
 
     # [:create_view, :create_trigger, :create_index]
+    # Create views and indexes
     phase_3 =
       for object_type <- [:create_view, :create_index], object <- by_type[object_type] do
         %{module: module, sql: sql, data: data, line_num: line_num} = object
@@ -188,6 +190,7 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
         {file_name, migration}
       end
 
+    # Create foreign keys and unique constraints
     phase_4 =
       for object_type <- [:foreign_key, :unique], object <- at_objects[object_type] do
         %{sql: sql, data: data, line_num: line_num} = object
@@ -206,8 +209,9 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
         {file_name, migration}
       end
 
+    # Write migrations to file
     files = List.flatten([phase_1, sequences_migrations, create_table_migrations, phase_3, phase_4])
-    for {{file_name, migration}, index} <- Enum.with_index(files) do
+    for {{file_name, migration}, index} <- Enum.with_index(files, 1) do
       path = Path.join(migrations_path, "#{to_prefix(index)}_#{file_name}")
       Mix.shell().info("#{path}")
       :ok = File.write(path, migration)
@@ -217,13 +221,7 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
   def migration_module(:foreign_key), do: EctoExtractMigrations.Migrations.ForeignKey
   def migration_module(:unique), do: EctoExtractMigrations.Migrations.Unique
 
-  def get_sequence_statements(results) do
-    for result <- results, result.type == :create_sequence do
-      [schema, name] = result.data.name
-      EctoExtractMigrations.Migrations.CreateSequence.migration_statement(result.sql, schema, name)
-    end
-  end
-
+  # Get constraint type
   # ALTER TABLE ADD CONSTRAINT PRIMARY KEY
   def alter_table_type(%{data: %{action: :add_table_constraint, type: :primary_key}}), do: :primary_key
   # ALTER TABLE ADD CONSTRAINT FOREIGN KEY
