@@ -45,7 +45,7 @@ Run migrations on a new db and compare with original:
 ```shell
 cat dbname.schema.sql | grep -v -E '^--|^$' > old.sql
 dropdb dbname_migrations
-createdb -Oclick -Eutf8 dbname_migrations
+createdb -Odbname -Eutf8 dbname_migrations
 DATABASE_URL=ecto://jake@localhost/dbname_migrations mix ecto.migrate --log-sql --migrations-path priv/repo/migrations/
 pg_dump --schema-only --no-owner postgres://jake@localhost/dbname_migrations > dbname_migrations.sql
 cat dbname_migrations.sql | grep -v -E '^--|^$' > new.sql
