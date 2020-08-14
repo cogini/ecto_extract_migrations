@@ -3,12 +3,13 @@ defmodule EctoExtractMigrations.Commands.CreateIndex do
 
   def type, do: :create_index
   defdelegate parse(sql), to: EctoExtractMigrations.Parsers.CreateIndex
+  defdelegate parse(sql, state), to: EctoExtractMigrations.Parsers.CreateIndex
   defdelegate match(sql), to: EctoExtractMigrations.Parsers.CreateIndex
 
   def file_name(data, _bindings), do: "index_#{data.name}.exs"
 
   def migration(data, bindings) do
-    [schema, table] = data.table_name
+    [_schema, table] = data.table_name
 
     table_name = ~s|"#{table}"|
 

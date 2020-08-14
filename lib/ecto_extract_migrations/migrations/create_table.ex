@@ -20,7 +20,7 @@ defmodule EctoExtractMigrations.Migrations.CreateTable do
   #   columns = Enum.map(columns_data, &format_column/1)
   #
   #   bindings = Keyword.merge(bindings, [
-  #     module_name: EctoExtractMigrations.format_module_name(data.name),
+  #     module_name: EctoExtractMigrations.sql_name_to_module(data.name),
   #     table_opts: table_opts,
   #     columns: columns,
   #   ])

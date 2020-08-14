@@ -4,6 +4,7 @@ defmodule EctoExtractMigrations.Commands.CreateExtension do
   def type, do: :create_extension
 
   defdelegate parse(sql), to: EctoExtractMigrations.Parsers.CreateExtension
+  defdelegate parse(sql, state), to: EctoExtractMigrations.Parsers.CreateExtension
   defdelegate match(sql), to: EctoExtractMigrations.Parsers.CreateExtension
 
   @spec file_name(map, Keyword.t) :: binary

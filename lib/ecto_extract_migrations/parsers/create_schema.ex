@@ -18,17 +18,32 @@ defmodule EctoExtractMigrations.Parsers.CreateSchema do
     |> reduce({Enum, :into, [%{}]})
 
   defparsec :parsec_parse, create_schema
+  defparsec :parsec_match, create_schema
 
-  def parse(sql) do
+  def parse(line), do: parse(line, %{sql: ""})
+
+  def parse(line, %{sql: lines} = state) do
+    sql = lines <> line
     case parsec_parse(sql) do
       {:ok, [value], _, _, _, _} ->
         {:ok, value}
-      error ->
-        error
+      {:error, reason, _, _, _, _} ->
+        {:continue, Map.merge(state, %{sql: sql, error: reason})}
     end
   end
 
-  def match(line), do: parse(line)
+  def match(line) do
+    case parsec_match(line) do
+      {:ok, _, _, _, _, _} ->
+        case parsec_parse(line) do
+          {:ok, [value], _, _, _, _} ->
+            {:ok, value}
+          {:error, reason, _, _, _, _} ->
+            {:continue, %{sql: line, error: reason}}
+        end
+      {:error, reason, _, _, _, _} ->
+        {:error, reason}
+    end
+  end
 
-  def tag, do: :create_schema
 end

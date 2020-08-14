@@ -3,6 +3,7 @@ defmodule EctoExtractMigrations.Commands.CreateType do
 
   def type, do: :create_type
   defdelegate parse(sql), to: EctoExtractMigrations.Parsers.CreateType
+  defdelegate parse(sql, state), to: EctoExtractMigrations.Parsers.CreateType
   defdelegate match(sql), to: EctoExtractMigrations.Parsers.CreateType
 
   def file_name(data, _bindings) do

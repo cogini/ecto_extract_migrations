@@ -3,6 +3,7 @@ defmodule EctoExtractMigrations.Commands.CreateSchema do
 
   def type, do: :create_schema
   defdelegate parse(sql), to: EctoExtractMigrations.Parsers.CreateSchema
+  defdelegate parse(sql, state), to: EctoExtractMigrations.Parsers.CreateSchema
   defdelegate match(sql), to: EctoExtractMigrations.Parsers.CreateSchema
 
   def file_name(data, _bindings), do: "schema_#{data.name}.exs"

@@ -3,7 +3,7 @@ defmodule EctoExtractMigrations.Constraint do
 
   def create_migration(data, bindings) do
     bindings = Keyword.merge(bindings, [
-      module_name: EctoExtractMigrations.format_module_name(data.table),
+      module_name: EctoExtractMigrations.sql_name_to_module(data.table),
       constraints: format_constraints(data)
     ])
 

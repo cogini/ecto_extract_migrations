@@ -6,7 +6,7 @@ defmodule EctoExtractMigrations.Migrations.CreateIndex do
   end
 
   def migration(data, bindings) do
-    [schema, table] = data.table_name
+    [_schema, table] = data.table_name
 
     table_name = ~s|"#{table}"|
 

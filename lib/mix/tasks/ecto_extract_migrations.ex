@@ -42,8 +42,9 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
     results =
       sql_file
       |> File.stream!()
-      |> Stream.with_index()
-      |> Stream.transform(nil, &parse/2)
+      |> Stream.with_index(1)
+      |> Stream.transform(nil, &EctoExtractMigrations.parse/2)
+      # |> Stream.filter(&(&1.type in [:create_function]))
       |> Stream.reject(&(&1.type in [:whitespace, :comment]))
       |> Enum.to_list()
 
@@ -73,7 +74,7 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
 
     # Group results by type
     by_type = Enum.group_by(results, &(&1.type))
-    # Mix.shell().info("types: #{inspect Map.keys(by_type)}")
+    Mix.shell().info("types: #{inspect Map.keys(by_type)}")
 
     # Collect ALTER TABLE statements
     at_objects = Enum.group_by(by_type[:alter_table], &alter_table_type/1)
@@ -120,13 +121,17 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
     phase_1 =
       for object_type <- [:create_extension, :create_schema, :create_type], object <- by_type[object_type] do
         %{module: module, sql: sql, data: data, line_num: line_num} = object
+
         Mix.shell().info("SQL #{line_num} #{object_type}\n#{inspect data}")
         Mix.shell().info(sql)
+
         data = Map.put(data, :sql, sql)
         {:ok, migration} = module.migration(data, bindings)
         file_name = module.file_name(data, bindings)
+
         Mix.shell().info(file_name)
         Mix.shell().info(migration)
+
         {file_name, migration}
       end
 
@@ -158,8 +163,10 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
 
           {:ok, migration} = module.migration(data, bindings)
           file_name = module.file_name(data, bindings)
+
           Mix.shell().info(file_name)
           Mix.shell().info(migration)
+
           {file_name, migration}
       end
 
@@ -167,27 +174,35 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
     phase_3 =
       for object_type <- [:create_view, :create_index], object <- by_type[object_type] do
         %{module: module, sql: sql, data: data, line_num: line_num} = object
+
         Mix.shell().info("SQL #{line_num} #{object_type}\n#{inspect data}")
         Mix.shell().info(sql)
+
         data = Map.put(data, :sql, sql)
         {:ok, migration} = module.migration(data, bindings)
         file_name = module.file_name(data, bindings)
+
         Mix.shell().info(file_name)
         Mix.shell().info(migration)
+
         {file_name, migration}
       end
 
     phase_4 =
       for object_type <- [:foreign_key, :unique], object <- at_objects[object_type] do
         %{sql: sql, data: data, line_num: line_num} = object
+
         Mix.shell().info("SQL #{line_num} #{object_type}\n#{inspect data}")
         Mix.shell().info(sql)
+
         data = Map.put(data, :sql, sql)
         module = migration_module(object_type)
         {:ok, migration} = module.migration(data, bindings)
         file_name = module.file_name(data, bindings)
+
         Mix.shell().info(file_name)
         Mix.shell().info(migration)
+
         {file_name, migration}
       end
 
@@ -196,66 +211,6 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
       path = Path.join(migrations_path, "#{to_prefix(index)}_#{file_name}")
       Mix.shell().info("#{path}")
       :ok = File.write(path, migration)
-    end
-  end
-
-  @spec parse({binary, integer}, nil | {module, binary}) :: {list, nil | {module, binary}}
-  # Not in the middle of multi-line parsing, try parsers one by one
-  def parse({line, line_num}, nil) do
-    modules = [
-      EctoExtractMigrations.Commands.Whitespace,
-      EctoExtractMigrations.Commands.Comment,
-
-      EctoExtractMigrations.Commands.CreateExtension,
-      EctoExtractMigrations.Commands.CreateSchema,
-      EctoExtractMigrations.Commands.CreateIndex,
-      EctoExtractMigrations.Commands.CreateTrigger,
-
-      EctoExtractMigrations.Commands.AlterTable,
-      EctoExtractMigrations.Commands.AlterSequence,
-
-      EctoExtractMigrations.Commands.CreateTable,
-      EctoExtractMigrations.Commands.CreateSequence,
-      EctoExtractMigrations.Commands.CreateType,
-      EctoExtractMigrations.Commands.CreateView,
-    ]
-
-    module_parse(modules, {line, line_num})
-  end
-
-  # Multi-line parsing using module
-  def parse({line, line_num}, {module, lines}) do
-    # Add new line and try to parse
-    lines = lines <> line
-    case module.parse(lines) do
-      {:ok, value} ->
-        # Parsing succeeded
-        {[%{module: module, type: module.type(), line_num: line_num, sql: lines, data: value}], nil}
-      _ ->
-        # Parsing failed, keep going
-        # This assumes that we will ultimately succeed, probably overly optimistic.
-        # The alternative is to stop when e.g. we hit a line ending with ";"
-        {[], {module, lines}}
-    end
-  end
-
-  def module_parse([], {line, line_num}) do
-    # No parser matched line
-    Mix.shell().info("#{line_num}> #{String.trim_trailing(line)}")
-    {[], nil}
-  end
-  def module_parse([module | rest], {line, line_num} = acc) do
-    case module.match(line) do
-      {:ok, value} ->
-        # Line parsed
-        {[%{module: module, type: module.type(), line_num: line_num, sql: line, data: value}], nil}
-      :start ->
-        # Matched first line of multi-line statement
-        # Mix.shell().info("#{line_num}> :start #{String.trim_trailing(line)}")
-        {[], {module, line}}
-      _ ->
-        # Try next parser
-        module_parse(rest, acc)
     end
   end
 

@@ -138,24 +138,29 @@ defmodule EctoExtractMigrations.Parsers.AlterTable do
   defparsec :parsec_parse, alter_table
   defparsec :parsec_match, match_alter_table
 
-  def parse(sql) do
+  def parse(line), do: parse(line, %{sql: ""})
+
+  def parse(line, %{sql: lines} = state) do
+    sql = lines <> line
     case parsec_parse(sql) do
-      {:ok, [value], _, _, _, _} -> {:ok, value}
-      error -> error
-    end
-  end
-
-  def match(sql) do
-    case parse(sql) do
-      {:ok, value} ->
+      {:ok, [value], _, _, _, _} ->
         {:ok, value}
-      _ ->
-        case parsec_match(sql) do
-          {:ok, _, _, _, _, _} -> :start
-          error -> error
-        end
+      {:error, reason, _, _, _, _} ->
+        {:continue, Map.merge(state, %{sql: sql, error: reason})}
     end
   end
 
-  def tag, do: :alter_table
+  def match(line) do
+    case parsec_match(line) do
+      {:ok, _, _, _, _, _} ->
+        case parsec_parse(line) do
+          {:ok, [value], _, _, _, _} ->
+            {:ok, value}
+          {:error, reason, _, _, _, _} ->
+            {:continue, %{sql: line, error: reason}}
+        end
+      {:error, reason, _, _, _, _} ->
+        {:error, reason}
+    end
+  end
 end

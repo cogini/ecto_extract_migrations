@@ -2,6 +2,7 @@ defmodule EctoExtractMigrations.Commands.CreateTable do
 
   def type, do: :create_table
   defdelegate parse(sql), to: EctoExtractMigrations.Parsers.CreateTable
+  defdelegate parse(sql, state), to: EctoExtractMigrations.Parsers.CreateTable
   defdelegate match(sql), to: EctoExtractMigrations.Parsers.CreateTable
 
   def file_name(%{name: [schema, table]}, _bindings) do

@@ -178,8 +178,8 @@ defmodule EctoExtractMigrations.Parsers.CreateIndex do
     |> ignore(optional(whitespace))
     |> reduce({Enum, :into, [%{}]})
 
-  defparsec :parsec_create_index, create_index
-
+  defparsec :parsec_parse, create_index
+  defparsec :parsec_match, create_index
 
   # :name - the name of the index. Defaults to "#{table}_#{column}_index".
   # :unique - indicates whether the index should be unique. Defaults to false.
@@ -189,15 +189,30 @@ defmodule EctoExtractMigrations.Parsers.CreateIndex do
   # :where - specify conditions for a partial index.
   # :include - specify fields for a covering index. This is not supported by all databases. For more information on PostgreSQL support, please read the official docs.
 
-  def parse(sql) do
-    case parsec_create_index(sql) do
+  def parse(line), do: parse(line, %{sql: ""})
+
+  def parse(line, %{sql: lines} = state) do
+    sql = lines <> line
+    case parsec_parse(sql) do
       {:ok, [value], _, _, _, _} ->
         {:ok, value}
-      error -> error
+      {:error, reason, _, _, _, _} ->
+        {:continue, Map.merge(state, %{sql: sql, error: reason})}
     end
   end
 
-  def match(line), do: parse(line)
+  def match(line) do
+    case parsec_match(line) do
+      {:ok, _, _, _, _, _} ->
+        case parsec_parse(line) do
+          {:ok, [value], _, _, _, _} ->
+            {:ok, value}
+          {:error, reason, _, _, _, _} ->
+            {:continue, %{sql: line, error: reason}}
+        end
+      {:error, reason, _, _, _, _} ->
+        {:error, reason}
+    end
+  end
 
-  def tag, do: :create_index
 end

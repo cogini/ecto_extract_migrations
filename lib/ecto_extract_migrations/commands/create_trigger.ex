@@ -2,6 +2,7 @@ defmodule EctoExtractMigrations.Commands.CreateTrigger do
 
   def type, do: :create_trigger
   defdelegate parse(sql), to: EctoExtractMigrations.Parsers.CreateTrigger
+  defdelegate parse(sql, state), to: EctoExtractMigrations.Parsers.CreateTrigger
   defdelegate match(sql), to: EctoExtractMigrations.Parsers.CreateTrigger
 
   # https://www.postgresql.org/docs/current/sql-droptrigger.html

@@ -326,41 +326,52 @@ defmodule EctoExtractMigrations.Parsers.CreateTable do
     |> ignore(optional(unlogged))
     |> ignore(string("TABLE"))
 
-  defparsec :parsec_match, match_create_table
-
   defparsec :parsec_table_constraint, table_constraint
   defparsec :parsec_table_name, table_name
   defparsec :parsec_create_table, create_table
   defparsec :parsec_column, column_spec
 
-  def parse(sql) do
-    case parsec_create_table(sql) do
+  defparsec :parsec_parse, create_table
+  defparsec :parsec_match, match_create_table
+
+  defp postprocess_value(value) do
+    {attrs, columns} = Enum.reduce(value, {%{}, []}, &split_attrs_columns/2)
+    columns = Enum.reverse(columns)
+
+    {constraints, columns} = Enum.split_with(columns, &is_constraint/1)
+    attrs = Map.merge(attrs, %{columns: columns, constraints: constraints})
+    attrs = if constraints == [] do
+      Map.drop(attrs, [:constraints])
+    else
+      attrs
+    end
+
+    attrs
+  end
+
+  def parse(line), do: parse(line, %{sql: ""})
+
+  def parse(line, %{sql: lines} = state) do
+    sql = lines <> line
+    case parsec_parse(sql) do
       {:ok, value, _, _, _, _} ->
-        {attrs, columns} = Enum.reduce(value, {%{}, []}, &split_attrs_columns/2)
-        columns = Enum.reverse(columns)
-
-        {constraints, columns} = Enum.split_with(columns, &is_constraint/1)
-        attrs = Map.merge(attrs, %{columns: columns, constraints: constraints})
-        attrs = if constraints == [] do
-          Map.drop(attrs, [:constraints])
-        else
-          attrs
-        end
-
-        {:ok, attrs}
-      error -> error
+        {:ok, postprocess_value(value)}
+      {:error, _, _, _, _, _} = error ->
+        {:continue, Map.merge(state, %{sql: sql, error: error})}
     end
   end
 
-  def match(sql) do
-    case parse(sql) do
-      {:ok, value} ->
-        {:ok, value}
-      _ ->
-        case parsec_match(sql) do
-          {:ok, _, _, _, _, _} -> :start
-          error -> error
+  def match(line) do
+    case parsec_match(line) do
+      {:ok, _, _, _, _, _} ->
+        case parsec_parse(line) do
+          {:ok, value, _, _, _, _} ->
+            {:ok, postprocess_value(value)}
+          {:error, _, _, _, _, _} = error ->
+            {:continue, %{sql: line, error: error}}
         end
+      {:error, reason, _, _, _, _} ->
+        {:error, reason}
     end
   end
 
@@ -400,5 +411,4 @@ defmodule EctoExtractMigrations.Parsers.CreateTable do
   def value(result), do: result
   # def value({:error, value, _, _, _, _}), do: {:error, value}
 
-  def tag, do: :create_table
 end

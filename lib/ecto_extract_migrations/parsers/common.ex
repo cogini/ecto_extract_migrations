@@ -44,6 +44,56 @@ defmodule EctoExtractMigrations.Parsers.Common do
     [String.downcase(value) |> String.to_existing_atom() | acc]
   end
 
+  # https://www.postgresql.org/docs/current/datatype.html
+  def data_type() do
+    choice(Enum.map([
+      "bigint",
+      "bigserial",
+      {"bit", :size},
+      {"bit varying", :size},
+      "boolean",
+      "box",
+      "bytea",
+      {"character varying", :size},
+      {"character", :size},
+      "cidr",
+      "circle",
+      "date",
+      "double precision",
+      "inet",
+      "integer",
+      "jsonb",
+      "json",
+      "line",
+      "lseg",
+      "macaddr8",
+      "macaddr",
+      "money",
+      {"numeric", [:precision, :scale]},
+      {"decimal", [:precision, :scale]},
+      "path",
+      "pg_lsn",
+      "point",
+      "polygon",
+      "real",
+      "smallint",
+      "smallserial",
+      "serial",
+      "text",
+      "timestamp without time zone",
+      "timestamp with time zone",
+      "timestamp",
+      "time without time zone",
+      "time with time zone",
+      "time",
+      "tsquery",
+      "tsvector",
+      "txid_snapshot",
+      "uuid",
+      "xml",
+    ], &atom_type/1))
+  end
+
   def atom_type({name, :size}) do
     uc = String.upcase(name)
     a = String.to_atom(name)
@@ -138,4 +188,5 @@ defmodule EctoExtractMigrations.Parsers.Common do
     values = Enum.map(acc, &("(" <> &1 <> ")"))
     {values, context}
   end
+
 end

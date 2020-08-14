@@ -12,6 +12,7 @@ defmodule EctoExtractMigrations.Commands.CreateSequence do
 
   def type, do: :create_sequence
   defdelegate parse(sql), to: EctoExtractMigrations.Parsers.CreateSequence
+  defdelegate parse(sql, state), to: EctoExtractMigrations.Parsers.CreateSequence
   defdelegate match(sql), to: EctoExtractMigrations.Parsers.CreateSequence
 
   def file_name(data, _bindings), do: "sequence_#{data.name}.exs"

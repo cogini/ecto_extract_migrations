@@ -5,7 +5,7 @@ defmodule CreateTableTest do
 
   test "match" do
     assert {:ok, %{columns: [], name: "device"}} == CreateTable.match("CREATE TABLE device ();")
-    assert :start == CreateTable.match("CREATE TABLE device")
+    assert {:continue, %{sql: "CREATE TABLE device"}} = CreateTable.match("CREATE TABLE device")
   end
 
   test "parse_table_name" do

@@ -1,12 +1,12 @@
-defmodule EctoExtractMigrations.Commands.CreateView do
+defmodule EctoExtractMigrations.Commands.CreateFunction do
   @app :ecto_extract_migrations
 
-  def type, do: :create_view
-  defdelegate parse(sql), to: EctoExtractMigrations.Parsers.CreateView
-  defdelegate parse(sql, state), to: EctoExtractMigrations.Parsers.CreateView
-  defdelegate match(sql), to: EctoExtractMigrations.Parsers.CreateView
+  def type, do: :create_function
+  defdelegate parse(sql), to: EctoExtractMigrations.Parsers.CreateFunction
+  defdelegate parse(sql, state), to: EctoExtractMigrations.Parsers.CreateFunction
+  defdelegate match(sql), to: EctoExtractMigrations.Parsers.CreateFunction
 
-  def file_name(data, _bindings), do: "view_#{data.name}.exs"
+  def file_name(data, _bindings), do: "function_#{data.name}.exs"
 
   def migration(data, bindings) do
     Mix.shell().info("view #{data[:name]}")
@@ -23,4 +23,5 @@ defmodule EctoExtractMigrations.Commands.CreateView do
     template_path = Path.join(template_dir, "view.eex")
     EctoExtractMigrations.eval_template(template_path, bindings)
   end
+
 end
