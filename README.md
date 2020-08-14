@@ -19,7 +19,7 @@ Supports:
 
 The parsers use NimbleParsec, and are based on the SQL grammar, so they are
 precise and reasonably complete. They don't support every esoteric option, just
-what we needed. Patches are welcome.
+what we needed, but that is quite a bit. Patches are welcome.
 
 ## Usage
 
@@ -43,12 +43,12 @@ mix ecto.extract.migrations --sql-file dbname.schema.sql
 Run migrations on a new db and compare with original:
 
 ```shell
+cat dbname.schema.sql | grep -v -E '^--|^$' > old.sql
 dropdb dbname_migrations
-createdb -Odbuser -Eutf8 dbname
-DATABASE_URL=ecto://dbuser@localhost/dbname_migrations mix ecto.migrate --log-sql --migrations-path priv/repo/migrations/
-pg_dump --schema-only --no-owner postgres://dbuser:dbpassword@localhost/dbname_migrations > migrations.dbname.schema.sql
-cat migrations.dbname.schema.sql | ./strip_stuff.pl | grep -v -E '^--|^$|^ALTER SEQUENCE' > new.sql
-diff -wu dbname.schema.sql new.sql
+createdb -Oclick -Eutf8 dbname_migrations
+DATABASE_URL=ecto://jake@localhost/dbname_migrations mix ecto.migrate --log-sql --migrations-path priv/repo/migrations/
+pg_dump --schema-only --no-owner postgres://jake@localhost/dbname_migrations > dbname_migrations.sql
+cat dbname_migrations.sql | grep -v -E '^--|^$' > new.sql
 ```
 
 ## Installation

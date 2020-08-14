@@ -53,9 +53,6 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
     # end
 
     # TODO
-    # CREATE INDEX
-    #   Generate with macros not text
-    #   Consolidate statements for performance
     #
     # CREATE TABLE
     #   Parse CONSTRAINTS with new expression parser
@@ -64,8 +61,9 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
     #   Handle column constraints
     #
     # invitation_faciliity table getting id field
+    # schemup_tables table getting id field
     #
-    #  Table CONSTRAINT, e.g. public.case_coupon
+    # Table CONSTRAINT, e.g. public.case_coupon
     #
     # For consistency, create sequences separately from table defaults
     #
