@@ -1,0 +1,14 @@
+defmodule <%= repo %>.Migrations.Function.<%= module_name %> do
+  use Ecto.Migration
+
+  def up do
+    execute(
+    """
+    <%= Regex.replace(~r/^/m, sql, "    ") %>
+    """)
+  end
+
+  def down do
+    execute("DROP FUNCTION IF EXISTS <%= schema %>.<%= name %>")
+  end
+end
