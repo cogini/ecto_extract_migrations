@@ -60,11 +60,6 @@ defmodule EctoExtractMigrations.Commands.CreateIndex do
     |> Module.concat()
   end
 
-  # # Get table name, with schema prefix if it is not public
-  # defp table_name(%{table_name: ["public", name]}), do: name
-  # defp table_name(%{table_name: [_schema, _name] = comps}), do: Enum.join(comps, ".")
-  # defp table_name(%{table_name: name}), do: name
-
   # Get schema prefix if it is not public
   defp table_opt_prefix(%{table_name: ["public", _table]}), do: nil
   defp table_opt_prefix(%{table_name: [schema, _table]}), do: schema

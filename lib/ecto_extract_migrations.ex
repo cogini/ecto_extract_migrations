@@ -4,6 +4,17 @@ defmodule EctoExtractMigrations do
   This module mainly has common library functions.
   """
 
+  @app :ecto_extract_migrations
+
+  require EEx
+
+  @template_execute_sql """
+      execute(
+      \"\"\"
+      <%= Regex.replace(~r/^/m, sql, "  ") %>
+      \"\"\")
+  """
+
   # defmodule ParseError do
   #   defexception message: "default message"
   # end
@@ -77,6 +88,25 @@ defmodule EctoExtractMigrations do
     end
   end
 
+  EEx.function_from_string(:def, :eval_template_execute_sql, @template_execute_sql, [:sql])
+
+  @doc "Expand template file to path under priv/templates"
+  @spec template_path(Path.t()) :: Path.t()
+  def template_path(file) do
+    template_dir = Application.app_dir(@app, ["priv", "templates"])
+    Path.join(template_dir, file)
+  end
+
+  @doc "Evaluate template file with bindings"
+  @spec eval_template_file(Path.t(), Keyword.t()) :: {:ok, binary} | {:error, term}
+  def eval_template_file(template_file, bindings \\ []) do
+    path = template_path(template_file)
+    {:ok, EEx.eval_file(path, bindings, trim: true)}
+  rescue
+    e ->
+      {:error, {:template, e}}
+  end
+
   @doc "Evaluate template file with bindings"
   @spec eval_template(Path.t(), Keyword.t()) :: {:ok, binary} | {:error, term}
   def eval_template(template_file, bindings \\ []) do
@@ -93,6 +123,12 @@ defmodule EctoExtractMigrations do
   def sql_name_to_module([schema, name]) do
     "#{Macro.camelize(schema)}.#{Macro.camelize(name)}"
   end
+
+  @doc "Convert list table name to binary"
+  @spec table_name(binary | list(binary)) :: binary
+  def table_name(name) when is_binary(name), do: name
+  def table_name(["public", name]), do: name
+  def table_name([schema, name]), do: "#{schema}.#{name}"
 
   @doc "Convert NimbleParsec result tuple into simple ok/error tuple"
   @spec parsec_result(tuple) :: {:ok, term} | {:error, term}
