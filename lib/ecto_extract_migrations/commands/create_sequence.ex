@@ -7,7 +7,7 @@ defmodule EctoExtractMigrations.Commands.CreateSequence do
       execute(
       \"\"\"
       <%= Regex.replace(~r/^/m, sql, "  ") %>
-      \"\"\", "drop sequence if exists <%= schema %>.<%= name %>")
+      \"\"\", "DROP SEQUENCE IF EXISTS <%= schema %>.<%= name %>")
   """
 
   def type, do: :create_sequence
