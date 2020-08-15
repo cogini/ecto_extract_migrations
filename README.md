@@ -1,7 +1,41 @@
 # ecto_extract_migrations
 
-Mix task to generate Ecto migrations from SQL definitions dumped from a
-Postgres database.
+Mix task to generate Ecto migrations from a Postgres schema SQL file.
+
+## Usage
+
+Dump database schema:
+
+```shell
+pg_dump --schema-only --no-owner postgres://dbuser:dbpassword@localhost/dbname > dbname.schema.sql
+```
+
+Generate migrations:
+
+```shell
+mix ecto.extract.migrations --sql-file dbname.schema.sql
+```
+
+Run migrations on a new db and compare with original:
+
+```shell
+cat dbname.schema.sql | grep -v -E '^--|^$' > old.sql
+dropdb dbname_migrations
+createdb -Odbuser -Eutf8 dbname_migrations
+mix ecto.migrate --log-sql
+pg_dump --schema-only --no-owner postgres://dbuser@localhost/dbname_migrations > dbname_migrations.sql
+cat dbname_migrations.sql | grep -v -E '^--|^$' > new.sql
+diff -wu old.sql new.sql
+```
+
+## Details
+
+This was written to migrate a legacy database with hundreds of tables and
+objects.
+
+The parsers use NimbleParsec, and are based on the SQL grammar, so they are
+precise and reasonably complete. They don't support every esoteric option, just
+what we needed, but that was quite a lot. Patches are welcome.
 
 Supports:
 
@@ -16,40 +50,6 @@ Supports:
 * `CREATE TRIGGER`
 * `CREATE TYPE`
 * `CREATE VIEW`
-
-The parsers use NimbleParsec, and are based on the SQL grammar, so they are
-precise and reasonably complete. They don't support every esoteric option, just
-what we needed, but that is quite a bit. Patches are welcome.
-
-## Usage
-
-This was used to migrate a legacy database with hundreds of tables and objects.
-The fundamental approach we used is to dump the schema SQL from the existing db,
-generate migrations and build a new db. We then exported the new db schema to SQL
-and compared it with the original to see what is different.
-
-Dump database schema:
-
-```shell
-pg_dump --schema-only  --no-owner postgres://dbuser:dbpassword@localhost/dbname > dbname.schema.sql
-```
-
-Generate migrations:
-
-```shell
-mix ecto.extract.migrations --sql-file dbname.schema.sql
-```
-
-Run migrations on a new db and compare with original:
-
-```shell
-cat dbname.schema.sql | grep -v -E '^--|^$' > old.sql
-dropdb dbname_migrations
-createdb -Odbname -Eutf8 dbname_migrations
-DATABASE_URL=ecto://jake@localhost/dbname_migrations mix ecto.migrate --log-sql --migrations-path priv/repo/migrations/
-pg_dump --schema-only --no-owner postgres://jake@localhost/dbname_migrations > dbname_migrations.sql
-cat dbname_migrations.sql | grep -v -E '^--|^$' > new.sql
-```
 
 ## Installation
 

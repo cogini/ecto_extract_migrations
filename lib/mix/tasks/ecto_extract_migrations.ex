@@ -1,6 +1,6 @@
 defmodule Mix.Tasks.Ecto.Extract.Migrations do
   @moduledoc """
-  Mix task to create Ecto migration files from database schema.
+  Mix task to create Ecto migration files from database schema SQL file.
 
   ## Command line options
 
