@@ -16,6 +16,13 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
   """
   @shortdoc "Create Ecto migration files from db schema SQL file"
 
+  # TODO
+  #
+  # CREATE TABLE
+  #   Parse CONSTRAINTS with new expression parser
+  #   Column options are not in order, use choice
+  #     e.g. public.login_log
+
   use Mix.Task
 
   @impl Mix.Task
@@ -51,45 +58,6 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
     # for result <- results do
     #   Mix.shell().info("#{inspect result}")
     # end
-
-    # TODO
-    #
-    # CREATE TABLE
-    #   Parse CONSTRAINTS with new expression parser
-    #   Column options are not in order, use choice
-    #     e.g. public.login_log
-    #   Handle column constraints
-    #
-    # invitation_faciliity table getting id field
-    # schemup_tables table getting id field
-    #
-    # Table CONSTRAINT, e.g. public.case_coupon
-    #
-    # For consistency, create sequences separately from table defaults
-    #
-    #   CREATE TABLE public.access_questionnaire_user (
-    #       id integer NOT NULL,
-    #       questionnaire_id integer NOT NULL,
-    #       user_id integer NOT NULL
-    #   );
-    #   CREATE SEQUENCE public.access_questionnaire_user_id_seq
-    #       START WITH 1
-    #       INCREMENT BY 1
-    #       NO MINVALUE
-    #       NO MAXVALUE
-    #       CACHE 1;
-    #   ALTER SEQUENCE public.access_questionnaire_user_id_seq OWNED BY public.access_questionnaire_user.id;
-    #
-    # ALTER TABLE ONLY chat.assignment ALTER COLUMN id SET DEFAULT nextval('chat.assignment_id_seq'::regclass);
-    #
-    # ALTER TABLE
-    #   ALTER TABLE ONLY chat.assignment ALTER COLUMN id SET DEFAULT nextval
-    #   ALTER TABLE ONLY chat.session ADD CONSTRAINT session_token_key UNIQUE (token);
-    #   ALTER TABLE ONLY chat.assignment ADD CONSTRAINT assignment_care_taker_id_fkey FOREIGN KEY (user_id) REFERENCES chat."user"(id);
-    #
-    #   Merge with create table
-    #
-    # CREATE TRIGGER
 
     # Group results by type
     by_type = Enum.group_by(results, &(&1.type))
@@ -130,10 +98,6 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
     #       Map.put(acc, table, Map.put(value, column, data))
     #   end
 
-    # Collect table constraints
-    # table_constraints = Enum.flat_map(results, &get_table_constraints/1)
-    # Mix.shell().info("table_constraints: #{inspect table_constraints}")
-
     # Base bindings for templates
     bindings = [
       repo: repo,
@@ -163,10 +127,12 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
       [schema, name] = data.name
       EctoExtractMigrations.Commands.CreateSequence.migration_statement(sql, schema, name)
     end
-    {:ok, migration} = EctoExtractMigrations.Commands.CreateSequence.migration_combine(statements, bindings)
+    call_bindings = Keyword.merge([
+      module_name: Enum.join([repo, "Migrations.Sequences"], "."), statements: statements], bindings)
+    {:ok, migration} = EctoExtractMigrations.eval_template_file("multi_statement.eex", call_bindings)
     file_name = "sequences.exs"
     Mix.shell().info(file_name)
-    sequences_migrations = [{file_name, migration}]
+    create_sequences_migration = [{file_name, migration}]
 
     # Create tables
     object_type = :create_table
@@ -195,21 +161,22 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
 
     # Create ALTER SEQUENCE OWNED BY
     # data: %{owned_by: [table: ["chat", "assignment"], column: "id"], sequence: ["chat", "assignment_id_seq"]},
-    statements = for %{data: data, sql: sql} <- as_objects[:owned_by] do
-      [schema, name] = data.sequence
-      EctoExtractMigrations.Commands.AlterSequence.migration_statement(sql, schema, name)
-    end
-    {:ok, migration} = EctoExtractMigrations.Commands.AlterSequence.migration_combine(statements, bindings)
+    statements = for %{sql: sql} <- as_objects[:owned_by], do: EctoExtractMigrations.eval_template_execute_sql(sql)
+    call_bindings = Keyword.merge([
+      module_name: Enum.join([repo, "Migrations.AlterSequences"], "."),
+      statements: statements
+    ], bindings)
+    {:ok, migration} = EctoExtractMigrations.eval_template_file("multi_statement.eex", call_bindings)
     file_name = "alter_sequences_owned_by.exs"
     Mix.shell().info(file_name)
-    alter_sequences_owned_by = [{file_name, migration}]
+    alter_sequences_owned_by_migration = [{file_name, migration}]
 
     # Create views, triggers, and indexes
     phase_3 =
       for object_type <- [:create_view, :create_trigger, :create_index], object <- by_type[object_type] do
         %{module: module, sql: sql, data: data, line_num: line_num} = object
 
-        Mix.shell().info("SQL #{line_num} #{object_type}\n#{inspect data}")
+        Mix.shell().info("\nSQL #{line_num} #{object_type}\n#{inspect data}")
         Mix.shell().info(sql)
 
         data = Map.put(data, :sql, sql)
@@ -244,23 +211,41 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
     Mix.shell().info("alter table types: #{inspect Map.keys(at_objects)}")
 
     # Create ALTER TABLE
-    statements = for action <- [:default, :foreign_key, :unique], %{data: data, sql: sql} <- at_objects[action] do
-      [schema, name] = data.table
-      EctoExtractMigrations.Commands.AlterTable.migration_statement(sql, schema, name)
-    end
-    {:ok, migration} = EctoExtractMigrations.Commands.AlterTable.migration_combine(statements, bindings)
+    statements =
+      for action <- [:default, :foreign_key, :unique], %{data: data, sql: sql} <- at_objects[action] do
+        EctoExtractMigrations.eval_template_execute_sql(sql)
+      end
+    call_bindings = Keyword.merge([statements: statements,
+      module_name: Enum.join([repo, "Migrations.AlterTables"], ".")], bindings)
+    {:ok, migration} = EctoExtractMigrations.eval_template_file("multi_statement.eex", call_bindings)
     file_name = "alter_tables.exs"
     Mix.shell().info(file_name)
     alter_tables = [{file_name, migration}]
 
+    # Generate ALTER TABLE CHECK constraints from CREATE TABLE constraints
+    statements =
+      for %{table: table, constraints: constraints} <- Enum.flat_map(results, &get_table_constraints/1),
+          %{check: check, name: constraint_name} <- constraints do
+        table_name = Enum.join(table, ".")
+        sql = "ALTER TABLE #{table_name} ADD CONSTRAINT #{constraint_name} CHECK #{check}"
+        EctoExtractMigrations.eval_template_execute_sql(sql)
+      end
+    call_bindings = Keyword.merge([statements: statements,
+      module_name: Enum.join([repo, "Migrations.AlterTable.CheckConstraints"], ".")], bindings)
+    {:ok, migration} = EctoExtractMigrations.eval_template_file("multi_statement.eex", call_bindings)
+    file_name = "alter_table_check_constraints.exs"
+    Mix.shell().info(file_name)
+    alter_table_check_contraints = [{file_name, migration}]
+
     # Write migrations to file
     files = List.flatten([
       phase_1,
-      sequences_migrations,
+      create_sequences_migration,
       create_table_migrations,
-      alter_sequences_owned_by,
+      alter_sequences_owned_by_migration,
       phase_3,
-      alter_tables
+      alter_tables,
+      alter_table_check_contraints,
     ])
     for {{file_name, migration}, index} <- Enum.with_index(files, 1) do
       path = Path.join(migrations_path, "#{to_prefix(index)}_#{file_name}")
