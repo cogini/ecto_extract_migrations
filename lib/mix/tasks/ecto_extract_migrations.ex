@@ -16,13 +16,6 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
   """
   @shortdoc "Create Ecto migration files from db schema SQL file"
 
-  # TODO
-  #
-  # CREATE TABLE
-  #   Parse CONSTRAINTS with new expression parser
-  #   Column options are not in order, use choice
-  #     e.g. public.login_log
-
   use Mix.Task
 
   @impl Mix.Task
@@ -61,7 +54,7 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
 
     # Group results by type
     by_type = Enum.group_by(results, &(&1.type))
-    Mix.shell().info("types: #{inspect Map.keys(by_type)}")
+    # Mix.shell().info("types: #{inspect Map.keys(by_type)}")
 
     # Collect ALTER SEQUENCE statements
     as_objects = Enum.group_by(by_type[:alter_sequence], &alter_sequence_type/1)
@@ -85,7 +78,6 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
     #   end
 
     # Collect table foreign key constraints from ALTER TABLE statements
-
     # foreign_keys =
     #   for result <- at_objects[:foreign_key], reduce: %{} do
     #     acc ->
@@ -209,7 +201,7 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
     #     {file_name, migration}
     #   end
 
-    Mix.shell().info("alter table types: #{inspect Map.keys(at_objects)}")
+    # Mix.shell().info("alter table types: #{inspect Map.keys(at_objects)}")
 
     # Create ALTER TABLE
     statements =
@@ -229,6 +221,7 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
           %{check: check, name: constraint_name} <- constraints do
         table_name = Enum.join(table, ".")
         sql = "ALTER TABLE #{table_name} ADD CONSTRAINT #{constraint_name} CHECK #{check}"
+        # Could also generate for Ecto constraint(table, constraint_name, check: check)
         EctoExtractMigrations.eval_template_execute_sql(sql)
       end
     call_bindings = Keyword.merge([statements: statements,
