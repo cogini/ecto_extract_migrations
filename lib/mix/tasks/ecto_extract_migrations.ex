@@ -62,7 +62,7 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
     # Collect ALTER TABLE statements
     at_objects = Enum.group_by(by_type[:alter_table], &alter_table_type/1)
 
-    # Collect table primary_keys from ALTER TABLE statements
+    # Collect table primary keys from ALTER TABLE statements
     primary_keys =
       for %{data: data} <- at_objects[:primary_key], into: %{} do
         {data.table, data.primary_key}
@@ -114,7 +114,7 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
         {file_name, migration}
       end
 
-    # Create sequences, merging multiple sequences into one
+    # Create sequences, merging multiple into one migration
     statements = for %{data: data, sql: sql} <- by_type[:create_sequence] do
       name = EctoExtractMigrations.object_name(data.name)
       down_sql = "DROP SEQUENCE IF EXISTS #{name}"
@@ -152,7 +152,7 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
           {file_name, migration}
       end
 
-    # Create ALTER SEQUENCE OWNED BY
+    # Create ALTER SEQUENCE OWNED BY associating sequence with table primary key
     # data: %{owned_by: [table: ["chat", "assignment"], column: "id"], sequence: ["chat", "assignment_id_seq"]},
     statements = for %{sql: sql} <- as_objects[:owned_by], do: EctoExtractMigrations.eval_template_execute_sql(sql)
     call_bindings = Keyword.merge([
