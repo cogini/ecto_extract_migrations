@@ -124,8 +124,9 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
 
     # Create sequences, merging multiple sequences into one
     statements = for %{data: data, sql: sql} <- by_type[:create_sequence] do
-      [schema, name] = data.name
-      EctoExtractMigrations.Commands.CreateSequence.migration_statement(sql, schema, name)
+      name = EctoExtractMigrations.object_name(data.name)
+      down_sql = "DROP SEQUENCE IF EXISTS #{name}"
+      EctoExtractMigrations.eval_template_execute_sql(sql, down_sql)
     end
     call_bindings = Keyword.merge([
       module_name: Enum.join([repo, "Migrations.Sequences"], "."), statements: statements], bindings)
@@ -212,7 +213,7 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
 
     # Create ALTER TABLE
     statements =
-      for action <- [:default, :foreign_key, :unique], %{data: data, sql: sql} <- at_objects[action] do
+      for action <- [:default, :foreign_key, :unique], %{sql: sql} <- at_objects[action] do
         EctoExtractMigrations.eval_template_execute_sql(sql)
       end
     call_bindings = Keyword.merge([statements: statements,

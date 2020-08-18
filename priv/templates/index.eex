@@ -1,8 +1,0 @@
-defmodule <%= repo %>.Migrations.Index.<%= module_name %> do
-  use Ecto.Migration
-
-  def change do
-    create index(<%= index_args %>)
-  end
-end
-

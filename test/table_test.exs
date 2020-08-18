@@ -1,7 +1,7 @@
 defmodule TableTest do
   use ExUnit.Case
 
-  alias EctoExtractMigrations.Migrations.CreateTable
+  alias EctoExtractMigrations.Commands.CreateTable
 
   test "has_pk" do
     columns = [

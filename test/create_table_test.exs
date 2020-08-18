@@ -187,9 +187,9 @@ defmodule CreateTableTest do
   end
 
   test "starts_with_number" do
-    assert EctoExtractMigrations.Migrations.CreateTable.starts_with_number("10")
-    assert EctoExtractMigrations.Migrations.CreateTable.starts_with_number("01")
-    refute EctoExtractMigrations.Migrations.CreateTable.starts_with_number("fish")
+    assert EctoExtractMigrations.Commands.CreateTable.starts_with_number("10")
+    assert EctoExtractMigrations.Commands.CreateTable.starts_with_number("01")
+    refute EctoExtractMigrations.Commands.CreateTable.starts_with_number("fish")
   end
 
   def value({:ok, [value], "", _, _, _}), do: value

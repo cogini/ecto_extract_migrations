@@ -60,9 +60,6 @@ defmodule EctoExtractMigrations.Commands.CreateTable do
     end
   end
 
-  # defp nil_value({_, nil}), do: true
-  # defp nil_value(_), do: false
-
   def column_ast(column) do
     column =  munge_column(column)
     column_name = String.to_atom(column.name)

@@ -1,0 +1,20 @@
+defmodule <%= module_name %> do
+  use Ecto.Migration
+
+  def up do
+    execute(
+    """
+    <%= Regex.replace(~r/^/m, up_sql, "    ") %>
+    """)
+  end
+
+  <%= if down_sql do %>
+  def down do
+    execute(
+    """
+    <%= Regex.replace(~r/^/m, down_sql, "    ") %>
+
+    """)
+  end
+  <% end %>
+end

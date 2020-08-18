@@ -14,19 +14,24 @@ defmodule EctoExtractMigrations.Commands.CreateExtension do
 
   @spec migration(map, Keyword.t) :: {:ok, binary} | {:error, term}
   def migration(data, bindings) do
-    name = data.name
-    schema = data.schema
+    %{schema: schema, name: name} = data
+
+    module_name = Enum.join([
+      bindings[:repo],
+      "Migrations",
+      "Extension",
+      Macro.camelize(schema),
+      Macro.camelize(name)
+    ], ".")
 
     bindings = Keyword.merge(bindings, [
-      name: name,
-      schema: schema,
-      module_name: "#{Macro.camelize(schema)}.#{Macro.camelize(name)}",
-      sql: data[:sql]
+      module_name: module_name,
+      up_sql: data[:sql],
+      down_sql: "DROP EXTENSION IF EXISTS #{name}"
     ])
 
     template_dir = Application.app_dir(@app, ["priv", "templates"])
-    template_path = Path.join(template_dir, "extension.eex")
+    template_path = Path.join(template_dir, "execute_sql.eex")
     EctoExtractMigrations.eval_template(template_path, bindings)
   end
-
 end

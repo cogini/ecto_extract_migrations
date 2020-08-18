@@ -1,15 +1,6 @@
 defmodule EctoExtractMigrations.Commands.CreateSequence do
   @app :ecto_extract_migrations
 
-  require EEx
-
-  @migration_statement """
-      execute(
-      \"\"\"
-      <%= Regex.replace(~r/^/m, sql, "  ") %>
-      \"\"\", "DROP SEQUENCE IF EXISTS <%= schema %>.<%= name %>")
-  """
-
   def type, do: :create_sequence
   defdelegate parse(sql), to: EctoExtractMigrations.Parsers.CreateSequence
   defdelegate parse(sql, state), to: EctoExtractMigrations.Parsers.CreateSequence
@@ -20,28 +11,26 @@ defmodule EctoExtractMigrations.Commands.CreateSequence do
   def file_name(%{name: [schema, name]}, _bindings), do: "sequence_#{schema}_#{name}.exs"
   def file_name(%{name: name}, _bindings), do: "sequence_#{name}.exs"
 
+  @spec migration(map, Keyword.t) :: {:ok, binary} | {:error, term}
   def migration(data, bindings) do
-    Mix.shell().info("sequence #{data[:name]}")
-
     [schema, name] = data.name
+
+    module_name = Enum.join([
+      bindings[:repo],
+      "Migrations",
+      "Sequence",
+      Macro.camelize(schema),
+      Macro.camelize(name)
+    ], ".")
+
     bindings = Keyword.merge(bindings, [
-      name: name,
-      schema: schema,
-      module_name: "#{Macro.camelize(schema)}.#{Macro.camelize(name)}",
-      sql: data[:sql]
+      module_name: module_name,
+      up_sql: data[:sql],
+      down_sql: "DROP SEQUENCE IF EXISTS #{schema}.#{name}"
     ])
 
     template_dir = Application.app_dir(@app, ["priv", "templates"])
-    template_path = Path.join(template_dir, "sequence.eex")
-    EctoExtractMigrations.eval_template(template_path, bindings)
-  end
-
-  EEx.function_from_string(:def, :migration_statement, @migration_statement, [:sql, :schema, :name])
-
-  def migration_combine(statements, bindings) do
-    bindings = Keyword.merge([module_name: "Sequences", sequences: statements], bindings)
-    template_dir = Application.app_dir(@app, ["priv", "templates"])
-    template_path = Path.join(template_dir, "sequences.eex")
+    template_path = Path.join(template_dir, "execute_sql.eex")
     EctoExtractMigrations.eval_template(template_path, bindings)
   end
 end

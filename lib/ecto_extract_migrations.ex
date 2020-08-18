@@ -15,6 +15,17 @@ defmodule EctoExtractMigrations do
       \"\"\")
   """
 
+  @template_execute_sql_updown """
+      execute(
+      \"\"\"
+      <%= Regex.replace(~r/^/m, up_sql, "  ") %>
+      \"\"\",
+      \"\"\"
+      <%= Regex.replace(~r/^/m, down_sql, "  ") %>
+      \"\"\"
+      )
+  """
+
   # defmodule ParseError do
   #   defexception message: "default message"
   # end
@@ -90,6 +101,8 @@ defmodule EctoExtractMigrations do
 
   EEx.function_from_string(:def, :eval_template_execute_sql, @template_execute_sql, [:sql])
 
+  EEx.function_from_string(:def, :eval_template_execute_sql, @template_execute_sql_updown, [:up_sql, :down_sql])
+
   @doc "Expand template file to path under priv/templates"
   @spec template_path(Path.t()) :: Path.t()
   def template_path(file) do
@@ -124,11 +137,11 @@ defmodule EctoExtractMigrations do
     "#{Macro.camelize(schema)}.#{Macro.camelize(name)}"
   end
 
-  @doc "Convert list table name to binary"
-  @spec table_name(binary | list(binary)) :: binary
-  def table_name(name) when is_binary(name), do: name
-  def table_name(["public", name]), do: name
-  def table_name([schema, name]), do: "#{schema}.#{name}"
+  @doc "Convert schema qualified name in list format to binary"
+  @spec object_name(binary | list(binary)) :: binary
+  def object_name(name) when is_binary(name), do: name
+  def object_name(["public", name]), do: name
+  def object_name([schema, name]), do: "#{schema}.#{name}"
 
   @doc "Convert NimbleParsec result tuple into simple ok/error tuple"
   @spec parsec_result(tuple) :: {:ok, term} | {:error, term}
