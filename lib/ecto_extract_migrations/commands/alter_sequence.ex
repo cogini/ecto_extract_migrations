@@ -1,4 +1,6 @@
 defmodule EctoExtractMigrations.Commands.AlterSequence do
+  @moduledoc "ALTER SEQUENCE"
+
   def type, do: :alter_sequence
 
   defdelegate parse(sql), to: EctoExtractMigrations.Parsers.AlterSequence

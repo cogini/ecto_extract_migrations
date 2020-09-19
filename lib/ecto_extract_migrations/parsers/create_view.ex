@@ -1,4 +1,6 @@
 defmodule EctoExtractMigrations.Parsers.CreateView do
+  @moduledoc "Parser for CREATE VIEW."
+
   import NimbleParsec
 
   alias EctoExtractMigrations.Parsers.Common

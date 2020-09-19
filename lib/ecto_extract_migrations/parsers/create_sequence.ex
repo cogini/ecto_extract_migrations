@@ -1,4 +1,6 @@
 defmodule EctoExtractMigrations.Parsers.CreateSequence do
+  @moduledoc "Parser for CREATE SEQUENCE."
+
   import NimbleParsec
 
   require EctoExtractMigrations.Parsers.Common

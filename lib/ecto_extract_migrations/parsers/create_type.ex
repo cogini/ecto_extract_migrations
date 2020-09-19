@@ -1,4 +1,6 @@
 defmodule EctoExtractMigrations.Parsers.CreateType do
+  @moduledoc "Parser for CREATE TYPE."
+
   import NimbleParsec
 
   alias EctoExtractMigrations.Parsers.Common

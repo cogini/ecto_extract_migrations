@@ -1,4 +1,6 @@
 defmodule EctoExtractMigrations.Parsers.CreateTable do
+  @moduledoc "Parser for CREATE TABLE."
+
   import NimbleParsec
 
   require EctoExtractMigrations.Parsers.Common

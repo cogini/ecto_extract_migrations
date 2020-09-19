@@ -1,4 +1,6 @@
 defmodule EctoExtractMigrations.Parsers.Comment do
+  @moduledoc "Parser for SQL comments."
+
   import NimbleParsec
 
   alias EctoExtractMigrations.Parsers.Common

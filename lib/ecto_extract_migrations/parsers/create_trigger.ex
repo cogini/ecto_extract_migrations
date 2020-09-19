@@ -1,4 +1,6 @@
 defmodule EctoExtractMigrations.Parsers.CreateTrigger do
+  @moduledoc "Parser for CREATE TRIGGER."
+
   import NimbleParsec
 
   require EctoExtractMigrations.Parsers.Common

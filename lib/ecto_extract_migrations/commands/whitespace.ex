@@ -1,4 +1,6 @@
 defmodule EctoExtractMigrations.Commands.Whitespace do
+  @moduledoc "SQL whitespace lines"
+
   def type, do: :whitespace
   # defdelegate parse(sql), to: EctoExtractMigrations.Parsers.Whitespace
   # defdelegate parse(sql, state), to: EctoExtractMigrations.Parsers.Whitespace

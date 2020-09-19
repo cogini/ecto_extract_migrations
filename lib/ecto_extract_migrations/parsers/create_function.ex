@@ -1,4 +1,6 @@
 defmodule EctoExtractMigrations.Parsers.CreateFunction do
+  @moduledoc "Parser for CREATE FUNCTION."
+
   import NimbleParsec
 
   alias EctoExtractMigrations.Parsers.Common

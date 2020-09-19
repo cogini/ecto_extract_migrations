@@ -1,4 +1,6 @@
 defmodule EctoExtractMigrations.Parsers.AlterTable do
+  @moduledoc "Parser for ALTER TABLE."
+
   import NimbleParsec
 
   alias EctoExtractMigrations.Parsers.Common

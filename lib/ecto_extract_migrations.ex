@@ -1,6 +1,6 @@
 defmodule EctoExtractMigrations do
   @moduledoc """
-  The main entry point is lib/mix/tasks/ecto_extract_migrations.ex
+  The main entry point is lib/mix/tasks/ecto_extract_migrations.ex.
   This module mainly has common library functions.
   """
 

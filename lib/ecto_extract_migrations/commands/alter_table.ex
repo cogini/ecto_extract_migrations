@@ -1,4 +1,6 @@
 defmodule EctoExtractMigrations.Commands.AlterTable do
+  @moduledoc "ALTER TABLE"
+
   def type, do: :alter_table
 
   defdelegate parse(sql), to: EctoExtractMigrations.Parsers.AlterTable

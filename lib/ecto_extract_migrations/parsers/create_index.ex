@@ -1,4 +1,6 @@
 defmodule EctoExtractMigrations.Parsers.CreateIndex do
+  @moduledoc "Parser for CREATE INDEX."
+
   import NimbleParsec
 
   require EctoExtractMigrations.Parsers.Common

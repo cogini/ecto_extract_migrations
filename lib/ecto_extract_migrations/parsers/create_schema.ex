@@ -1,4 +1,6 @@
 defmodule EctoExtractMigrations.Parsers.CreateSchema do
+  @moduledoc "Parser for CREATE SCHEMA."
+
   import NimbleParsec
 
   alias EctoExtractMigrations.Parsers.Common

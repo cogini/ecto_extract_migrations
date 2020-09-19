@@ -1,5 +1,5 @@
 defmodule EctoExtractMigrations.Parsers.AlterSequence do
-  @moduledoc "Parser for ALTER SEQUENCE"
+  @moduledoc "Parser for ALTER SEQUENCE."
 
   import NimbleParsec
 

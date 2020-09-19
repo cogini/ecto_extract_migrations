@@ -1,4 +1,6 @@
 defmodule EctoExtractMigrations.Commands.CreateExtension do
+  @moduledoc "CREATE EXTENSION"
+
   @app :ecto_extract_migrations
 
   def type, do: :create_extension
