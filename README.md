@@ -39,8 +39,8 @@ what we needed, but that was quite a lot. Patches are welcome.
 
 Supports:
 
-* `ALTER TABLE`
 * `ALTER SEQUENCE`
+* `ALTER TABLE`
 * `CREATE EXTENSION`
 * `CREATE FUNCTION`
 * `CREATE INDEX`

@@ -1,5 +1,5 @@
 defmodule EctoExtractMigrations.Commands.CreateType do
-  @moduledoc "CREATE TYPE"
+  @moduledoc "Handle CREATE TYPE."
 
   @app :ecto_extract_migrations
 

@@ -1,5 +1,5 @@
 defmodule EctoExtractMigrations.Commands.CreateTable do
-  @moduledoc "CREATE TABLE"
+  @moduledoc "Handle CREATE TABLE."
 
   def type, do: :create_table
   defdelegate parse(sql), to: EctoExtractMigrations.Parsers.CreateTable

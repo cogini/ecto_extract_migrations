@@ -1,5 +1,5 @@
 defmodule EctoExtractMigrations.Commands.Comment do
-  @moduledoc "SQL comments"
+  @moduledoc "Handle SQL comments."
 
   def type, do: :comment
   defdelegate parse(sql), to: EctoExtractMigrations.Parsers.Comment

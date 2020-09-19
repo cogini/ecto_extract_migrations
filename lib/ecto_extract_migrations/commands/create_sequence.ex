@@ -1,5 +1,5 @@
 defmodule EctoExtractMigrations.Commands.CreateSequence do
-  @moduledoc "CREATE SEQUENCE"
+  @moduledoc "Handle CREATE SEQUENCE."
 
   @app :ecto_extract_migrations
 

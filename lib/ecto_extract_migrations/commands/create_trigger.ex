@@ -1,5 +1,5 @@
 defmodule EctoExtractMigrations.Commands.CreateTrigger do
-  @moduledoc "CREATE TRIGGER"
+  @moduledoc "Handle CREATE TRIGGER."
 
   def type, do: :create_trigger
   defdelegate parse(sql), to: EctoExtractMigrations.Parsers.CreateTrigger

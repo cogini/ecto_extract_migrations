@@ -1,5 +1,5 @@
 defmodule EctoExtractMigrations.Commands.AlterTable do
-  @moduledoc "ALTER TABLE"
+  @moduledoc "Handle ALTER TABLE."
 
   def type, do: :alter_table
 

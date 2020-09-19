@@ -1,5 +1,5 @@
 defmodule EctoExtractMigrations.Commands.AlterSequence do
-  @moduledoc "ALTER SEQUENCE"
+  @moduledoc "Handle ALTER SEQUENCE."
 
   def type, do: :alter_sequence
 

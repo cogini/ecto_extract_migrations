@@ -1,5 +1,5 @@
 defmodule EctoExtractMigrations.Commands.CreateIndex do
-  @moduledoc "CREATE INDEX"
+  @moduledoc "Handle CREATE INDEX."
 
   def type, do: :create_index
   defdelegate parse(sql), to: EctoExtractMigrations.Parsers.CreateIndex

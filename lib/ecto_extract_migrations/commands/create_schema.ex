@@ -1,5 +1,5 @@
 defmodule EctoExtractMigrations.Commands.CreateSchema do
-  @moduledoc "CREATE SCHEMA"
+  @moduledoc "Handle CREATE SCHEMA."
 
   @app :ecto_extract_migrations
 

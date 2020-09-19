@@ -1,5 +1,5 @@
 defmodule EctoExtractMigrations.Commands.CreateView do
-  @moduledoc "CREATE VIEW"
+  @moduledoc "Handle CREATE VIEW."
 
   @app :ecto_extract_migrations
 

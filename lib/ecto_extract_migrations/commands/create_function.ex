@@ -1,5 +1,5 @@
 defmodule EctoExtractMigrations.Commands.CreateFunction do
-  @moduledoc "CREATE FUNCTION"
+  @moduledoc "Handle CREATE FUNCTION."
 
   @app :ecto_extract_migrations
 
