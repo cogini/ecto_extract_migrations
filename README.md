@@ -2,28 +2,35 @@
 
 Mix task to generate Ecto migrations from a Postgres schema SQL file.
 
+This lets you take an existing project and move it into Elixir
+with a proper development workflow.
+
 ## Usage
 
-Dump database schema:
+1. Generate a schema-only dump of the database to SQL:
 
 ```shell
 pg_dump --schema-only --no-owner postgres://dbuser:dbpassword@localhost/dbname > dbname.schema.sql
 ```
 
-Generate migrations:
+2. Generate migrations from the SQL file:
 
 ```shell
 mix ecto.extract.migrations --sql-file dbname.schema.sql
 ```
 
-Run migrations on a new db and compare with original:
+3. Creating a test database, running migrations on it, then
+verify that it works.
 
 ```shell
-cat dbname.schema.sql | grep -v -E '^--|^$' > old.sql
 dropdb dbname_migrations
 createdb -Odbuser -Eutf8 dbname_migrations
+
 mix ecto.migrate --log-sql
+
 pg_dump --schema-only --no-owner postgres://dbuser@localhost/dbname_migrations > dbname_migrations.sql
+
+cat dbname.schema.sql | grep -v -E '^--|^$' > old.sql
 cat dbname_migrations.sql | grep -v -E '^--|^$' > new.sql
 diff -wu old.sql new.sql
 ```
