@@ -58,10 +58,12 @@ defmodule EctoExtractMigrations.MixProject do
 
   defp docs do
     [
-      source_url: @github,
+      main: "readme",
       extras: ["README.md", "CHANGELOG.md"],
+      source_url: @github,
       # api_reference: false,
-      source_url_pattern: "#{@github}/blob/master/%{path}#L%{line}"
+      source_url_pattern: "#{@github}/blob/master/%{path}#L%{line}",
+      skip_undefined_reference_warnings_on: ["CHANGELOG.md"]
     ]
   end
 end
