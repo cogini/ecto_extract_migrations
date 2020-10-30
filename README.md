@@ -19,8 +19,8 @@ pg_dump --schema-only --no-owner postgres://dbuser:dbpassword@localhost/dbname >
 mix ecto.extract.migrations --sql-file dbname.schema.sql
 ```
 
-3. Creating a test database, running migrations on it, then
-verify that it works.
+3. Create a test database, run migrations to create the schema, then
+export it and verify that it matches the original database:
 
 ```shell
 dropdb dbname_migrations
