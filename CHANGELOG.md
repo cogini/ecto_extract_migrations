@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2020-11-01
+### Added
+- Improved docs, thanks to @kianmeng
+- Handle missing sql schema objects
+
 ## [0.1.1] - 2020-10-31
 ### Added
 - Improved docs
