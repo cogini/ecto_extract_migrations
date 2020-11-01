@@ -29,6 +29,7 @@ with a proper development workflow.
 export it and verify that it matches the original database:
 
    ```shell
+   createuser --encrypted --pwprompt dbuser
    dropdb dbname_migrations
    createdb -Odbuser -Eutf8 dbname_migrations
 
@@ -46,7 +47,7 @@ export it and verify that it matches the original database:
 This was written to migrate a legacy database with hundreds of tables and
 objects.
 
-The parser use NimbleParsec, and are based on the SQL grammar, so they are
+The parsers use NimbleParsec, and are based on the SQL grammar, so they are
 precise and reasonably complete. They don't support every esoteric option, just
 what we needed, but that was quite a lot. Patches are welcome.
 
