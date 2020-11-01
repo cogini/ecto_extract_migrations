@@ -57,14 +57,14 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
     # Mix.shell().info("types: #{inspect Map.keys(by_type)}")
 
     # Collect ALTER SEQUENCE statements
-    as_objects = Enum.group_by(by_type[:alter_sequence], &alter_sequence_type/1)
+    as_objects = Enum.group_by(by_type[:alter_sequence] || [], &alter_sequence_type/1)
 
     # Collect ALTER TABLE statements
-    at_objects = Enum.group_by(by_type[:alter_table], &alter_table_type/1)
+    at_objects = Enum.group_by(by_type[:alter_table] || [], &alter_table_type/1)
 
     # Collect table primary keys from ALTER TABLE statements
     primary_keys =
-      for %{data: data} <- at_objects[:primary_key], into: %{} do
+      for %{data: data} <- at_objects[:primary_key] || [], into: %{} do
         {data.table, data.primary_key}
       end
 
@@ -98,7 +98,7 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
     # Create extensions, schemas and types
     phase_1 =
       for object_type <- [:create_extension, :create_schema, :create_type, :create_function],
-          object <- by_type[object_type] do
+          object <- by_type[object_type] || [] do
         %{module: module, sql: sql, data: data, line_num: line_num} = object
 
         Mix.shell().info("SQL #{line_num} #{object_type}\n#{inspect data}")
@@ -166,7 +166,7 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
 
     # Create views, triggers, and indexes
     phase_3 =
-      for object_type <- [:create_view, :create_trigger, :create_index], object <- by_type[object_type] do
+      for object_type <- [:create_view, :create_trigger, :create_index], object <- by_type[object_type] || [] do
         %{module: module, sql: sql, data: data, line_num: line_num} = object
 
         Mix.shell().info("\nSQL #{line_num} #{object_type}\n#{inspect data}")
