@@ -25,6 +25,12 @@ with a proper development workflow.
    mix ecto.extract.migrations --sql-file dbname.schema.sql
    ```
 
+   or, from outside the target project:
+
+   ```shell
+   mix ecto.extract.migrations --sql-file dbname.schema.sql --repo "MyProject.Repo" --migrations-path ../myproject/priv/repo/migrations
+   ```
+
 3. Create a test database, run migrations to create the schema, then
 export it and verify that it matches the original database:
 
@@ -47,9 +53,10 @@ export it and verify that it matches the original database:
 This was written to migrate a legacy database with hundreds of tables and
 objects.
 
-The parsers use NimbleParsec, and are based on the SQL grammar, so they are
-precise and reasonably complete. They don't support every esoteric option, just
-what we needed, but that was quite a lot. Patches are welcome.
+The parser uses NimbleParsec, and is based on the SQL grammar, so it is
+precise (unlike regex) and reasonably complete. It doesn't support every
+esoteric option, just what we needed, but that was quite a lot. Patches are
+welcome.
 
 Supports:
 
