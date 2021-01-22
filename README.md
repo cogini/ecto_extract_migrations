@@ -53,10 +53,10 @@ export it and verify that it matches the original database:
 This was written to migrate a legacy database with hundreds of tables and
 objects.
 
-The parser uses NimbleParsec, and is based on the SQL grammar, so it is
-precise (unlike regex) and reasonably complete. It doesn't support every
-esoteric option, just what we needed, but that was quite a lot. Patches are
-welcome.
+The parser uses [NimbleParsec](https://github.com/dashbitco/nimble_parsec), and
+is based on the SQL grammar, so it is precise (unlike regex) and reasonably
+complete. It doesn't support every esoteric option, just what we needed, but
+that was quite a lot. Patches are welcome.
 
 Supports:
 
@@ -90,3 +90,10 @@ Here are some useful resources for NimbleParsec:
 
 * https://stefan.lapers.be/posts/elixir-writing-an-expression-parser-with-nimble-parsec/
 * https://github.com/slapers/ex_sel
+
+## Alternatives
+
+* [ecto_generator](https://github.com/pmarreck/ecto_generator) generates Ecto schemas by querying
+  the database [information schema](https://www.postgresql.org/docs/13/information-schema.html)
+* [ex_abnf](https://github.com/marcelog/ex_abnf) generates a parser based on an
+  [ABNF grammar](https://en.wikipedia.org/wiki/Augmented_Backus%E2%80%93Naur_form).
