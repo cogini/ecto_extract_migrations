@@ -205,6 +205,7 @@ defmodule EctoExtractMigrations.Parsers.CreateTable do
       string("timezone('UTC'::text, now())") |> unwrap_and_tag(:fragment),
       string("NULL::character varying") |> unwrap_and_tag(:fragment), # redundant
       string("CURRENT_TIMESTAMP") |> unwrap_and_tag(:fragment),
+      string("CURRENT_TIMESTAMP") |> unwrap_and_tag(:fragment),
       string("''")
         |> ignore(
           optional(
@@ -240,7 +241,8 @@ defmodule EctoExtractMigrations.Parsers.CreateTable do
         string("TRUE") |> replace(true),
         string("false") |> replace(false),
         string("FALSE") |> replace(false),
-      ])
+      ]),
+      utf8_string([{:not, ?\s}], min: 1)
     ]) |> unwrap_and_tag(:default) |> label("default")
 
   match =
