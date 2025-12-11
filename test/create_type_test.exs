@@ -16,4 +16,23 @@ defmodule CreateTypeTest do
     );
     """)
   end
+
+  test "create type oban" do
+    expected = %{
+      labels: ["available", "scheduled", "executing", "retryable", "completed", "discarded", "cancelled"],
+      name: ["public", "oban_job_state"]
+    }
+
+    assert {:ok, expected} == CreateType.parse("""
+    CREATE TYPE public.oban_job_state AS ENUM (
+        'available',
+        'scheduled',
+        'executing',
+        'retryable',
+        'completed',
+        'discarded',
+        'cancelled'
+    );
+    """)
+  end
 end
