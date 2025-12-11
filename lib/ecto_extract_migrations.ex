@@ -40,7 +40,7 @@ defmodule EctoExtractMigrations do
 
   # In multi-line SQL statement
   def parse({line, line_num}, {module, state}) do
-    # Mix.shell().info("#{line_num}> #{line} #{inspect state}")
+    # Mix.shell().info("#{line_num}> #{line} #{inspect(state)}")
     case module.parse(line, state) do
       {:ok, value} ->
         # Parsing succeeded
