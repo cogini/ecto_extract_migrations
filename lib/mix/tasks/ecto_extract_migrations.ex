@@ -310,6 +310,6 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
   # Format numeric index as string with leading zeroes for filenames
   @spec to_prefix(integer) :: binary
   defp to_prefix(index) do
-    to_string(:io_lib.format('~4..0b', [index]))
+    to_string(:io_lib.format(~c"~4..0b", [index]))
   end
 end
