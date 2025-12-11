@@ -186,6 +186,56 @@ defmodule CreateTableTest do
     assert {:ok, expected} == CreateTable.parse(sql)
   end
 
+  test "create table with id sequence" do
+    sql = """
+    CREATE TABLE public.activities (
+        id integer DEFAULT nextval('public.activities_id_seq'::regclass) NOT NULL,
+        course_id integer,
+        task_category_id integer,
+        next_action_handled_by integer,
+        status character varying(255) DEFAULT 'Not Done'::character varying,
+        due_on date,
+        completed_on date,
+        memo text,
+        created_at timestamp without time zone,
+        updated_at timestamp without time zone,
+        next_action character varying(255),
+        completed boolean DEFAULT false,
+        company_id integer,
+        created_by_id integer,
+        next_action_on date,
+        subject character varying(255),
+        owned_by integer,
+        updated_by_id integer
+    );
+
+    """
+    expected = %{
+      columns: [
+        %{name: "id", null: false, type: :integer, default: "nextval('public.activities_id_seq'::regclass)"},
+        %{name: "course_id", type: :integer},
+        %{name: "task_category_id", type: :integer},
+        %{name: "next_action_handled_by", type: :integer},
+        %{name: "status", type: :"character varying", default: "Not Done", size: 255},
+        %{name: "due_on", type: :date},
+        %{name: "completed_on", type: :date},
+        %{name: "memo", type: :text},
+        %{name: "created_at", type: :"timestamp without time zone"},
+        %{name: "updated_at", type: :"timestamp without time zone"},
+        %{name: "next_action", size: 255, type: :"character varying"},
+        %{default: false, name: "completed", type: :boolean},
+        %{name: "company_id", type: :integer},
+        %{name: "created_by_id", type: :integer},
+        %{name: "next_action_on", type: :date},
+        %{name: "subject", size: 255, type: :"character varying"},
+        %{name: "owned_by", type: :integer},
+        %{name: "updated_by_id", type: :integer}
+      ],
+      name: ["public", "activities"]
+    }
+    assert {:ok, expected} == CreateTable.parse(sql)
+  end
+
   test "starts_with_number" do
     assert EctoExtractMigrations.Commands.CreateTable.starts_with_number("10")
     assert EctoExtractMigrations.Commands.CreateTable.starts_with_number("01")
