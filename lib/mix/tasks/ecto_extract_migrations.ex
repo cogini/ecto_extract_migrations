@@ -49,7 +49,7 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
       |> Enum.to_list()
 
     # for result <- results do
-    #   Mix.shell().info("#{inspect result}")
+    #   Mix.shell().info("#{inspect(result)}")
     # end
 
     # Group results by type
