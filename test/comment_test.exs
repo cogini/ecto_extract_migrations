@@ -9,4 +9,3 @@ defmodule CommentTest do
     assert {:ok, %{comment: "Some text"}} == Comment.parse("    --Some text\n")
   end
 end
-
