@@ -33,8 +33,8 @@ defmodule EctoExtractMigrations.MixProject do
   defp deps do
     [
       {:nimble_parsec, "~> 0.6"},
-      {:dialyxir, "~> 0.5.1", only: [:dev, :test], runtime: false},
-      {:ex_doc, "~> 0.23", only: :dev, runtime: false}
+      {:dialyxir, "~> 1.4.7", only: [:dev, :test], runtime: false},
+      {:ex_doc, "~> 0.39", only: :dev, runtime: false}
     ]
   end
 
