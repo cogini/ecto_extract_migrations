@@ -27,19 +27,19 @@ defmodule EctoExtractMigrations.Parsers.CreateIndex do
 
   column_name = Common.column_name() |> post_traverse(:to_atom) |> label("column_name")
 
-  defp to_atom(_rest, acc, context, _line, _offset) do
+  defp to_atom(rest, acc, context, _line, _offset) do
     atoms = Enum.map(acc, &String.to_atom/1)
-    {atoms, context}
+    {rest, atoms, context}
   end
 
-  defp wrap_parens(_rest, acc, context, _line, _offset) do
+  defp wrap_parens(rest, acc, context, _line, _offset) do
     values = Enum.map(acc, &("(" <> &1 <> ")"))
-    {values, context}
+    {rest, values, context}
   end
 
-  defp unwrap_parens_traverse(_rest, acc, context, _line, _offset) do
+  defp unwrap_parens_traverse(rest, acc, context, _line, _offset) do
     values = Enum.map(acc, &unwrap_parens/1)
-    {values, context}
+    {rest, values, context}
   end
 
   # defp unwrap_parens_traverse(_rest, acc, context, _line, _offset) do
