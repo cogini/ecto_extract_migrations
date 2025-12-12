@@ -4,6 +4,7 @@ defmodule EctoExtractMigrations.Parsers.AlterTable do
   import NimbleParsec
 
   alias EctoExtractMigrations.Parsers.Common
+  alias EctoExtractMigrations.Parsers.CheckConstraint
 
   # https://www.postgresql.org/docs/current/sql-altertable.html
 
@@ -93,7 +94,20 @@ defmodule EctoExtractMigrations.Parsers.AlterTable do
     string("ADD CONSTRAINT") |> replace(:add_table_constraint) |> unwrap_and_tag(:action)
     |> ignore(whitespace)
     |> concat(table_constraint_name)
-    |> choice([table_constraint_primary_key, table_constraint_foreign_key, table_constraint_unique])
+    |> choice([
+      table_constraint_primary_key,
+      table_constraint_foreign_key,
+      table_constraint_unique,
+      CheckConstraint.table_constraint_check() |> optional(
+        ignore(whitespace)
+        |> string("NOT VALID")
+        |> replace(:not_valid)
+        |> unwrap_and_tag(:not_valid)
+      )
+    ])
+
+# ALTER TABLE public.oban_jobs
+#     ADD CONSTRAINT non_negative_priority CHECK ((priority >= 0)) NOT VALID;
 
   column_name = name
 
