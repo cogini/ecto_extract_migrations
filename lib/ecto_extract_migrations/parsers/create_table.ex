@@ -10,7 +10,7 @@ defmodule EctoExtractMigrations.Parsers.CreateTable do
 
   # TODO
   #
-  #   Parse CONSTRAINTS with new expression parser
+  #   Parse CONSTRAINTs with new expression parser
   #   Column options are not in order, use choice
   #     e.g. public.login_log
 
