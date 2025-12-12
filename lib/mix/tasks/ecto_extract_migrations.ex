@@ -260,6 +260,12 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
   def alter_table_type(%{data: %{action: :set_default}}), do: :default
   # ALTER TABLE ADD CONSTRAINT UNIQUE
   def alter_table_type(%{data: %{action: :add_table_constraint, type: :unique}}), do: :unique
+  # ALTER TABLE ADD CONSTRAINT CHECK
+  def alter_table_type(%{data: %{action: :add_table_constraint, type: :check}}), do: :check
+  # ALTER TABLE ENABLE TRIGGER
+  # ALTER TABLE DISABLE TRIGGER
+  def alter_table_type(%{data: %{action: :enable_trigger}}), do: :trigger
+  def alter_table_type(%{data: %{action: :disable_trigger}}), do: :trigger
 
   # Get alter sequence type
   # ALTER SEQUENCE chat.assignment_id_seq OWNED BY chat.assignment.id;

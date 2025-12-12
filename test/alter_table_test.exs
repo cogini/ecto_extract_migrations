@@ -152,6 +152,20 @@ defmodule AlterTableTest do
     ALTER TABLE ONLY public.report_query
         ADD CONSTRAINT report_query_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.click_user(id) ON DELETE SET NULL;
     """)
+
+    expected = %{
+      action: :add_table_constraint,
+      table: ["public", "training_profiles"],
+      columns: ["company_id"],
+      constraint_name: "venues_company_id_fkey",
+      references_columns: ["id"],
+      references_table: ["public", "p_companies"],
+      type: :foreign_key
+    }
+    assert {:ok, expected} == AlterTable.parse("""
+    ALTER TABLE ONLY public.training_profiles
+      ADD CONSTRAINT venues_company_id_fkey FOREIGN KEY (company_id) REFERENCES public.p_companies(id);
+    """)
   end
 
   test "column default" do
@@ -173,11 +187,23 @@ defmodule AlterTableTest do
       table: ["public", "oban_jobs"],
       check: "(priority >= 0)",
       constraint_name: "non_negative_priority",
-      not_valid: :not_valid
+      valid: false,
+      type: :check
     }
     assert {:ok, expected} == AlterTable.parse("""
     ALTER TABLE public.oban_jobs
         ADD CONSTRAINT non_negative_priority CHECK ((priority >= 0)) NOT VALID;
+    """)
+  end
+
+  test "trigger" do
+    expected = %{
+      action: :disable_trigger,
+      table: ["public", "p_schedules"],
+      name: "schedules_no_overlap_trigger"
+    }
+    assert {:ok, expected} == AlterTable.parse("""
+    ALTER TABLE public.p_schedules DISABLE TRIGGER schedules_no_overlap_trigger;
     """)
   end
 

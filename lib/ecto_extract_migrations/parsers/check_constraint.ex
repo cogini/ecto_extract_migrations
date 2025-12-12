@@ -62,6 +62,7 @@ defmodule EctoExtractMigrations.Parsers.CheckConstraint do
     |> concat(expr())
     |> ascii_char([?)]) |> label(")")
     |> map({Common, :to_bin, []})
+    |> unwrap_and_tag(:check)
     |> label("bool_expression")
   end
 
@@ -71,19 +72,20 @@ defmodule EctoExtractMigrations.Parsers.CheckConstraint do
     |> ascii_char([?)]) |> label(")")
     |> map({Common, :to_bin, []})
     |> reduce({Enum, :join, [""]})
+    |> unwrap_and_tag(:check)
     |> label("expr")
   end
 
+# ALTER TABLE public.oban_jobs
+#     ADD CONSTRAINT non_negative_priority CHECK ((priority >= 0)) NOT VALID;
+
   def table_constraint_check do
     ignore(whitespace())
-    |> ignore(string("CHECK"))
+    |> string("CHECK") |> replace(:check) |> unwrap_and_tag(:type)
     |> ignore(whitespace())
     |> ignore(lparen())
     |> choice([expr(), bool_expression()])
     |> ignore(rparen())
-    |> map({Common, :to_bin, []})
-    |> reduce({Enum, :join, [""]})
-    |> unwrap_and_tag(:check)
     |> label("CHECK")
   end
 

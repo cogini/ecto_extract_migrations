@@ -101,13 +101,10 @@ defmodule EctoExtractMigrations.Parsers.AlterTable do
       CheckConstraint.table_constraint_check() |> optional(
         ignore(whitespace)
         |> string("NOT VALID")
-        |> replace(:not_valid)
-        |> unwrap_and_tag(:not_valid)
+        |> replace(:false)
+        |> unwrap_and_tag(:valid)
       )
     ])
-
-# ALTER TABLE public.oban_jobs
-#     ADD CONSTRAINT non_negative_priority CHECK ((priority >= 0)) NOT VALID;
 
   column_name = name
 
@@ -131,10 +128,30 @@ defmodule EctoExtractMigrations.Parsers.AlterTable do
     |> replace(:set_default) |> unwrap_and_tag(:action)
     |> concat(default)
 
+  # DISABLE TRIGGER [ trigger_name | ALL | USER ]
+  # ENABLE TRIGGER [ trigger_name | ALL | USER ]
+
+  trigger =
+    choice([
+      string("DISABLE TRIGGER") |> replace(:disable_trigger),
+      string("ENABLE TRIGGER") |> replace(:enable_trigger)
+    ])
+    |> unwrap_and_tag(:action)
+    |> ignore(whitespace)
+    |> choice([
+      string("ALL") |> replace(:true) |> unwrap_and_tag(:all),
+      string("USER") |> replace(:true) |> unwrap_and_tag(:user),
+      name |> unwrap_and_tag(:name)
+    ])
+
   action =
     ignore(whitespace)
     # |> times(add_table_constraint, min: 1)
-    |> choice([add_table_constraint, alter_column |> concat(set_default)])
+    |> choice([
+      add_table_constraint,
+      alter_column |> concat(set_default),
+      trigger
+    ])
     |> ignore(optional(ascii_char([?,])))
 
   alter_table =
