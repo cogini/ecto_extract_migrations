@@ -83,12 +83,8 @@ defmodule EctoExtractMigrations.Parsers.Common do
       "smallserial",
       "serial",
       "text",
-      "timestamp without time zone",
-      "timestamp with time zone",
-      "timestamp",
-      "time without time zone",
-      "time with time zone",
-      "time",
+      {"timestamp", [:precision, :tz]},
+      {"time", [:precision, :tz]},
       "tsquery",
       "tsvector",
       "txid_snapshot",
@@ -146,6 +142,30 @@ defmodule EctoExtractMigrations.Parsers.Common do
     #     |> tag(:size)
     #   )
   end
+
+  def atom_type({name, [:precision, :tz]}) when name in ["time", "timestamp"] do
+    uc = String.upcase(name)
+    a = String.to_atom(name)
+
+    choice([string(name), string(uc)])
+    |> replace(a)
+    |> unwrap_and_tag(:type)
+    |> optional(
+      ignore(ascii_char([?(]))
+      |> integer(min: 1)
+      |> ignore(ascii_char([?)]))
+      |> unwrap_and_tag(:precision)
+    )
+    |> ignore(optional(whitespace()))
+    |> optional(
+      choice([
+        string("with time zone") |> replace(:true),
+        string("without time zone") |> replace(:false)
+      ])
+      |> unwrap_and_tag(:tz)
+    )
+  end
+
   def atom_type(name) do
     uc = String.upcase(name)
     a = String.to_atom(name)
