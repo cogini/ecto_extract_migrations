@@ -38,6 +38,21 @@ defmodule EctoExtractMigrations.Parsers.CreateTable do
 
   table_name = choice([schema_qualified_table_name, bare_table_name])
 
+  quoted_string =
+    ignore(ascii_char([?']))
+      |> utf8_string([{:not, ?'}], min: 1)
+      |> ignore(ascii_char([?']))
+      |> optional(
+          choice([
+            string("::bpchar"),
+            string("::character varying"),
+            string("::character"),
+            string("::text"),
+            string("::bytea"),
+            string("::jsonb"),
+            string("::json")
+          ])
+        )
 
   # [ CONSTRAINT constraint_name ]
   # { CHECK ( expression ) [ NO INHERIT ] |
@@ -242,11 +257,26 @@ defmodule EctoExtractMigrations.Parsers.CreateTable do
     |> replace(true)
     |> unwrap_and_tag(:primary_key)
 
+  timezone_cast_to_date =
+    lparen
+    |> string("timezone")
+    |> concat(lparen)
+    |> concat(quoted_string)
+    |> ascii_char([?,])
+    |> concat(whitespace)
+    |> string("now()")
+    |> concat(rparen)
+    |> concat(rparen)
+    |> string("::date")
+    |> map(:to_bin)
+    |> reduce({Enum, :join, [""]})
+
   default =
     ignore(whitespace)
     |> ignore(string("DEFAULT"))
     |> ignore(whitespace)
     |> choice([
+      timezone_cast_to_date,
       string("now()") |> unwrap_and_tag(:fragment),
       string("timezone('UTC'::text, now())") |> unwrap_and_tag(:fragment),
       string("NULL::character varying") |> unwrap_and_tag(:fragment), # redundant
