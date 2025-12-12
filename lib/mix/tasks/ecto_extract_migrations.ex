@@ -205,7 +205,7 @@ defmodule Mix.Tasks.Ecto.Extract.Migrations do
 
     # Create ALTER TABLE
     statements =
-      for action <- [:default, :foreign_key, :unique], %{sql: sql} <- at_objects[action] do
+      for action <- [:default, :foreign_key, :unique], %{sql: sql} <- at_objects[action] || [] do
         EctoExtractMigrations.eval_template_execute_sql(sql)
       end
     call_bindings = Keyword.merge([statements: statements,
