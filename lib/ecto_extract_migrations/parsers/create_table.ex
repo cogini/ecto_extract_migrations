@@ -58,15 +58,61 @@ defmodule EctoExtractMigrations.Parsers.CreateTable do
     {values, context}
   end
 
+  defp to_bin(value) when is_integer(value), do: to_string([value])
+  defp to_bin(value) when is_binary(value), do: value
+
+  expr_name =
+    name
+    |> concat(lparen)
+    |> concat(name)
+    |> concat(rparen)
+    # |> post_traverse(:wrap_parens)
+    |> label("expr_name")
+
+  math_op =
+    utf8_string([?=, ?>, ?<, ?-, ?:], min: 1)
+    |> label("math_op")
+
+  expr_value =
+    utf8_string([?a..?z, ?A..?Z, ?0..?9, ?_, ?'], min: 1)
+    |> label("expr_value")
+
   expression =
-    utf8_string([?a..?z, ?A..?Z, ?0..?9, ?_, ?=, ?>, ?<, ?\s, ?', ?-, ?:], min: 1)
-    |> post_traverse(:wrap_parens)
+    choice([expr_name, name])
+    |> concat(whitespace)
+    |> concat(math_op)
+    |> concat(whitespace)
+    |> concat(expr_value)
+    |> map(:to_bin)
+    |> reduce({Enum, :join, [""]})
     |> label("expression")
 
+  bool_op =
+    choice([
+      string("AND"),
+      string("OR"),
+      string("NOT"),
+    ])
+    |> label("bool_op")
+
+  defcombinatorp(:bool_expression,
+    lparen
+    |> parsec(:expr)
+    |> concat(whitespace)
+    |> concat(bool_op)
+    |> concat(whitespace)
+    |> parsec(:expr)
+    |> concat(rparen)
+    |> map(:to_bin)
+    |> label("bool_expression")
+  )
+
   defcombinatorp(:expr,
-    ignore(lparen)
-    |> choice([parsec(:expr), expression])
-    |> ignore(rparen)
+    lparen
+    |> concat(expression)
+    |> concat(rparen)
+    |> map(:to_bin)
+    |> reduce({Enum, :join, [""]})
     |> label("expr")
   )
 
@@ -74,7 +120,11 @@ defmodule EctoExtractMigrations.Parsers.CreateTable do
     ignore(string("CHECK"))
     |> ignore(whitespace)
     # |> utf8_string([?a..?z, ?A..?Z, ?0..?9, ?_, 32, ?(, ?), ?=, ?<, ?>], min: 1)
-    |> parsec(:expr)
+    |> ignore(lparen)
+    |> choice([parsec(:expr), parsec(:bool_expression)])
+    |> ignore(rparen)
+    |> map(:to_bin)
+    |> reduce({Enum, :join, [""]})
     |> unwrap_and_tag(:check)
     |> optional(string("NO INHERIT"))
     |> label("CHECK")
@@ -137,12 +187,8 @@ defmodule EctoExtractMigrations.Parsers.CreateTable do
       "smallserial",
       "serial",
       "text",
-      "timestamp without time zone",
-      "timestamp with time zone",
-      "timestamp",
-      "time without time zone",
-      "time with time zone",
-      "time",
+      {"timestamp", [:precision, :tz]},
+      {"time", [:precision, :tz]},
       "tsquery",
       "tsvector",
       "txid_snapshot",
@@ -210,6 +256,7 @@ defmodule EctoExtractMigrations.Parsers.CreateTable do
         |> ignore(
           optional(
             choice([
+              string("::bpchar"),
               string("::character varying"),
               string("::character"),
               string("::text"),
