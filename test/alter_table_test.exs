@@ -167,6 +167,20 @@ defmodule AlterTableTest do
     """)
   end
 
+  test "check" do
+    expected = %{
+      action: :add_table_constraint,
+      table: ["public", "oban_jobs"],
+      check: "(priority >= 0)",
+      constraint_name: "non_negative_priority",
+      not_valid: :not_valid
+    }
+    assert {:ok, expected} == AlterTable.parse("""
+    ALTER TABLE public.oban_jobs
+        ADD CONSTRAINT non_negative_priority CHECK ((priority >= 0)) NOT VALID;
+    """)
+  end
+
   def value({:ok, value, "", _, _, _}), do: value
   def value({:error, value, _, _, _, _}), do: value
 end

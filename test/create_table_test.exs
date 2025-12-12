@@ -87,6 +87,12 @@ defmodule CreateTableTest do
     assert {:ok, expected} == CreateTable.parse_column(input)
   end
 
+  test "column default timezone " do
+    input = "order_date date DEFAULT (timezone('Asia/Taipei'::text, now()))::date"
+    expected = [%{name: "order_date", type: :date, default: "(timezone(Asia/Taipei::text, now()))::date"}]
+    assert {:ok, expected} == CreateTable.parse_column(input)
+  end
+
   test "table constraint check" do
     expected = [{:type, :constraint}, {:name, "case_coupon_current_uses_check"}, {:check, "(current_uses >= 0)"}]
     input = "CONSTRAINT case_coupon_current_uses_check CHECK ((current_uses >= 0))"
