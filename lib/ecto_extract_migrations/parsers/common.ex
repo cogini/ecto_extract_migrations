@@ -55,6 +55,7 @@ defmodule EctoExtractMigrations.Parsers.Common do
       {"bit varying", :size},
       "boolean",
       "box",
+      "bpchar",
       "bytea",
       {"character varying", :size},
       {"character", :size},
