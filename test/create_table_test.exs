@@ -146,7 +146,7 @@ defmodule CreateTableTest do
         %{name: "rowid", type: :integer},
         %{name: "member_id", type: :"character varying", size: 50, null: false},
         %{name: "mbi", type: :"character varying", size: 50},
-        %{name: "dob", type: :"timestamp without time zone"},
+        %{name: "dob", type: :timestamp, tz: false},
         %{name: "age", type: :integer},
       ]
     }
@@ -180,8 +180,8 @@ defmodule CreateTableTest do
         %{name: "discount_amount", type: :integer, null: false},
         %{name: "max_uses", null: false, type: :integer},
         %{name: "current_uses", null: false, type: :integer},
-        %{name: "start_date", type: :"timestamp without time zone"},
-        %{name: "end_date", type: :"timestamp without time zone"}
+        %{name: "start_date", type: :timestamp, tz: false},
+        %{name: "end_date", type: :timestamp, tz: false}
       ],
       name: ["public", "case_coupon"],
       constraints: [
@@ -228,8 +228,8 @@ defmodule CreateTableTest do
         %{name: "due_on", type: :date},
         %{name: "completed_on", type: :date},
         %{name: "memo", type: :text},
-        %{name: "created_at", type: :"timestamp without time zone"},
-        %{name: "updated_at", type: :"timestamp without time zone"},
+        %{name: "created_at", type: :timestamp, tz: false},
+        %{name: "updated_at", type: :timestamp, tz: false},
         %{name: "next_action", size: 255, type: :"character varying"},
         %{default: false, name: "completed", type: :boolean},
         %{name: "company_id", type: :integer},
