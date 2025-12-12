@@ -99,6 +99,14 @@ defmodule CreateTableTest do
     expected = [{:type, :constraint}, {:name, "case_coupon_max_uses_check"}, {:check, "(max_uses >= 0)"}]
     input = "CONSTRAINT case_coupon_max_uses_check CHECK ((max_uses >= 0))"
     assert {:ok, expected} == CreateTable.parse_table_constraint(input)
+
+    expected = [{:type, :constraint}, {:name, "attempt_range"}, {:check, "((attempt >= 0) AND (attempt <= max_attempts))"}]
+    input = "CONSTRAINT attempt_range CHECK (((attempt >= 0) AND (attempt <= max_attempts)))"
+    assert {:ok, expected} == CreateTable.parse_table_constraint(input)
+
+    expected = [{:type, :constraint}, {:name, "queue_length"}, {:check, "((char_length(queue) > 0) AND (char_length(queue) < 128))"}]
+    input = "CONSTRAINT queue_length CHECK (((char_length(queue) > 0) AND (char_length(queue) < 128)))"
+    assert {:ok, expected} == CreateTable.parse_table_constraint(input)
   end
 
   test "parse_session" do
@@ -232,6 +240,184 @@ defmodule CreateTableTest do
         %{name: "updated_by_id", type: :integer}
       ],
       name: ["public", "activities"]
+    }
+    assert {:ok, expected} == CreateTable.parse(sql)
+  end
+
+  test "create table with timestamp" do
+    sql = """
+    CREATE TABLE public.assignment_logs (
+        id bigint NOT NULL,
+        assignment_id bigint,
+        user_id bigint,
+        inserted_at timestamp(0) without time zone NOT NULL,
+        updated_at timestamp(0) without time zone NOT NULL,
+        authorized boolean
+    );
+    """
+    expected = %{
+      columns: [
+         %{name: "id", null: false, type: :bigint},
+         %{name: "assignment_id", type: :bigint},
+         %{name: "user_id", type: :bigint},
+         %{name: "inserted_at", type: :timestamp, null: false, precision: 0, tz: false},
+         %{name: "updated_at", type: :timestamp, null: false, precision: 0, tz: false},
+         %{name: "authorized", type: :boolean}
+      ],
+      name: ["public", "assignment_logs"]
+    }
+    assert {:ok, expected} == CreateTable.parse(sql)
+  end
+
+  test "create table bpchar" do
+    sql = """
+    CREATE TABLE public.client (
+        client_code character varying(20) NOT NULL,
+        e_name character varying(250),
+        c_name character varying(250),
+        business_id character(8),
+        invoice_title character varying(100),
+        group_id integer DEFAULT 0 NOT NULL,
+        charge_sales_tax character(3) DEFAULT 'Yes'::bpchar,
+        phone character varying(50),
+        fax character varying(50),
+        contact_email character varying(50),
+        postal_code character(3),
+        address character varying(250),
+        url character varying(150),
+        industry character varying(200),
+        number_employee integer DEFAULT 0,
+        transportation_fee integer DEFAULT 0,
+        status character varying(20) DEFAULT 'Active'::character varying NOT NULL,
+        memo text,
+        admin character varying(20) DEFAULT 'foo'::character varying NOT NULL,
+        eng_address character varying(250),
+        contact_cname character varying(120),
+        contact_ename character varying(120),
+        contact_direct_line character varying(50),
+        contact_extension character varying(50),
+        contact_mobile character varying(25),
+        password character varying(30),
+        company_id integer
+    );
+    """
+    expected = %{
+      columns: [
+        %{name: "client_code", null: false, type: :"character varying", size: 20},
+        %{name: "e_name", type: :"character varying", size: 250},
+        %{name: "c_name", type: :"character varying", size: 250},
+        %{name: "business_id", type: :character, size: 8},
+        %{name: "invoice_title", type: :"character varying", size: 100},
+        %{name: "group_id", type: :integer, default: 0, null: false},
+        %{default: "Yes", name: "charge_sales_tax", size: 3, type: :character},
+        %{name: "phone", size: 50, type: :"character varying"},
+        %{name: "fax", size: 50, type: :"character varying"},
+        %{name: "contact_email", size: 50, type: :"character varying"},
+        %{name: "postal_code", size: 3, type: :character},
+        %{name: "address", size: 250, type: :"character varying"},
+        %{name: "url", size: 150, type: :"character varying"},
+        %{name: "industry", size: 200, type: :"character varying"},
+        %{default: 0, name: "number_employee", type: :integer},
+        %{default: 0, name: "transportation_fee", type: :integer},
+        %{default: "Active", name: "status", size: 20, type: :"character varying", null: false},
+        %{name: "memo", type: :text},
+        %{default: "foo", name: "admin", size: 20, type: :"character varying", null: false},
+        %{name: "eng_address", size: 250, type: :"character varying"},
+        %{name: "contact_cname", size: 120, type: :"character varying"},
+        %{name: "contact_ename", size: 120, type: :"character varying"},
+        %{name: "contact_direct_line", size: 50, type: :"character varying"},
+        %{name: "contact_extension", size: 50, type: :"character varying"},
+        %{name: "contact_mobile", size: 25, type: :"character varying"},
+        %{name: "password", size: 30, type: :"character varying"},
+        %{name: "company_id", type: :integer}
+       ],
+       name: ["public", "client"]
+    }
+    assert {:ok, expected} == CreateTable.parse(sql)
+  end
+
+  test "create table timestamp without time zone DEFAULT now()" do
+    sql = """
+    CREATE TABLE public.descriptor_references (
+        id integer NOT NULL,
+        descriptor_reference_category_id integer,
+        content character varying(255),
+        "position" integer DEFAULT 10,
+        active boolean DEFAULT true,
+        created_at timestamp without time zone DEFAULT now() NOT NULL,
+        updated_at timestamp without time zone DEFAULT now() NOT NULL
+    );
+    """
+    expected = %{
+      columns: [
+         %{name: "id", null: false, type: :integer},
+         %{name: "descriptor_reference_category_id", type: :integer},
+         %{name: "content", size: 255, type: :"character varying"},
+         %{name: "position", type: :integer, default: 10},
+         %{name: "active", type: :boolean, default: true},
+         %{default: {:fragment, "now()"}, name: "created_at", null: false, type: :timestamp, tz: false},
+         %{default: {:fragment, "now()"}, name: "updated_at", type: :timestamp, null: false, tz: false}
+      ],
+      name: ["public", "descriptor_references"]
+    }
+    assert {:ok, expected} == CreateTable.parse(sql)
+  end
+
+  test "create table default custom enum" do
+    sql = """
+    CREATE TABLE public.oban_jobs (
+        id bigint NOT NULL,
+        state public.oban_job_state DEFAULT 'available'::public.oban_job_state NOT NULL,
+        queue text DEFAULT 'default'::text NOT NULL,
+        worker text NOT NULL,
+        args jsonb DEFAULT '{}'::jsonb NOT NULL,
+        errors jsonb[] DEFAULT ARRAY[]::jsonb[] NOT NULL,
+        attempt integer DEFAULT 0 NOT NULL,
+        max_attempts integer DEFAULT 20 NOT NULL,
+        inserted_at timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
+        scheduled_at timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
+        attempted_at timestamp without time zone,
+        completed_at timestamp without time zone,
+        attempted_by text[],
+        discarded_at timestamp without time zone,
+        priority integer DEFAULT 0 NOT NULL,
+        tags text[] DEFAULT ARRAY[]::text[],
+        meta jsonb DEFAULT '{}'::jsonb,
+        cancelled_at timestamp without time zone,
+        CONSTRAINT attempt_range CHECK (((attempt >= 0) AND (attempt <= max_attempts))),
+        CONSTRAINT positive_max_attempts CHECK ((max_attempts > 0)),
+        CONSTRAINT queue_length CHECK (((char_length(queue) > 0) AND (char_length(queue) < 128))),
+        CONSTRAINT worker_length CHECK (((char_length(worker) > 0) AND (char_length(worker) < 128)))
+    );
+    """
+    expected = %{
+      columns: [
+        %{name: "id", null: false, type: :bigint},
+        %{name: "state", type: ["public", "oban_job_state"], default: "available", null: false},
+        %{name: "queue", type: :text, default: "default", null: false},
+        %{name: "worker", type: :text, null: false},
+        %{default: "{}", name: "args", type: :jsonb, null: false},
+        %{default: "ARRAY[]::jsonb[]", name: "errors", null: false, type: :jsonb, is_array: true},
+        %{default: 0, name: "attempt", null: false, type: :integer},
+        %{default: 20, name: "max_attempts", type: :integer, null: false},
+        %{default: {:fragment, "timezone('UTC'::text, now())"}, name: "inserted_at", type: :timestamp, null: false, tz: false},
+        %{default: {:fragment, "timezone('UTC'::text, now())"}, name: "scheduled_at", type: :timestamp, null: false, tz: false},
+        %{name: "attempted_at", type: :timestamp, tz: false},
+        %{name: "completed_at", type: :timestamp, tz: false},
+        %{name: "attempted_by", type: :text, is_array: true},
+        %{name: "discarded_at", type: :timestamp, tz: false},
+        %{default: 0, name: "priority", type: :integer, null: false},
+        %{default: "ARRAY[]::text[],\n", name: "tags", type: :text, is_array: true},
+        %{default: "{}", name: "meta", type: :jsonb},
+        %{name: "cancelled_at", type: :timestamp, tz: false}
+      ],
+      name: ["public", "oban_jobs"],
+      constraints: [
+        %{name: "attempt_range", type: :constraint, check: "((attempt >= 0) AND (attempt <= max_attempts))"},
+        %{name: "positive_max_attempts", type: :constraint, check: "(max_attempts > 0)"},
+        %{name: "queue_length", type: :constraint, check: "((char_length(queue) > 0) AND (char_length(queue) < 128))"},
+        %{name: "worker_length", type: :constraint, check: "((char_length(worker) > 0) AND (char_length(worker) < 128))"}
+      ]
     }
     assert {:ok, expected} == CreateTable.parse(sql)
   end
