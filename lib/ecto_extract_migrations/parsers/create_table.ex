@@ -271,6 +271,7 @@ defmodule EctoExtractMigrations.Parsers.CreateTable do
         |> ignore(
           optional(
             choice([
+              string("::bpchar"),
               string("::character varying"),
               string("::character"),
               string("::text"),
