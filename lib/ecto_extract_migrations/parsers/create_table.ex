@@ -279,6 +279,7 @@ defmodule EctoExtractMigrations.Parsers.CreateTable do
               string("::jsonb"),
               string("::json"),
               string("::integer"),
+              string("::") |> concat(user_defined_type)
             ])
           )
           |> optional(string("[]"))
