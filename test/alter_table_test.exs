@@ -154,6 +154,19 @@ defmodule AlterTableTest do
     """)
   end
 
+  test "column default" do
+    expected = %{
+      action: :set_default,
+      table: ["public", "adjustment_types"],
+      column: "id",
+      default: {:fragment, "nextval('public.adjustment_types_id_seq'::regclass)"}
+    }
+    assert {:ok, expected} == AlterTable.parse("""
+    ALTER TABLE ONLY public.adjustment_types
+        ALTER COLUMN id SET DEFAULT nextval('public.adjustment_types_id_seq'::regclass);
+    """)
+  end
+
   def value({:ok, value, "", _, _, _}), do: value
   def value({:error, value, _, _, _, _}), do: value
 end
