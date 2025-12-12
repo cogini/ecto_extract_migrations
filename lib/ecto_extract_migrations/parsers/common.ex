@@ -212,4 +212,6 @@ defmodule EctoExtractMigrations.Parsers.Common do
     {values, context}
   end
 
+  def to_bin(value) when is_integer(value), do: to_string([value])
+  def to_bin(value) when is_binary(value), do: value
 end
